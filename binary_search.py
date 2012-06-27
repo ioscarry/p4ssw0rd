@@ -4,7 +4,7 @@ import cProfile
 def searchFile(f, term):
     """Does a binary search on a file object of unknown length. Returns a float
     of the position in the file if found, False if not."""
-    # TODO: Find a way to cache locations of first 1-2 characters at the least
+    # TODO: Find a way to index the first character automatically
     # TODO: Fix bug - first entry in file returns False
     f.seek(0, os.SEEK_END)
     size = f.tell()
@@ -21,14 +21,13 @@ def searchFile(f, term):
         if found == temp:
             break
         if found > term:
-            #print "found: {} high: {} low: {}".format(found, high, low)
             high = mid
         else:
-            #print "found: {} high: {} low: {}".format(found, high, low)
             low = mid
         i += 1
         if i > 250:
-            raise Exception("infinite loop during binary search for {}".format(term))
+            raise Exception(
+                "infinite loop during binary search for {}".format(term))
 
     if found == term:
         return (mid * 1.0) / size
