@@ -40,11 +40,6 @@ class Password(object):
     COST = {}
     regexContainsLetters = re.compile(r"[a-zA-Z]")
     regexIsDate = re.compile(r"(\d{1,4})([-/_. ])?(\d{1,2})\2?(\d{1,4})?$")
-    regexIsYMD = re.compile(r"(\d{2,4})[-/_. ]?(\d{1,2})[-/_. ]?(\d{1,2})$")
-    regexIsMDY = re.compile(r"(\d{1,2})[-/_. ]?(\d{1,2})[-/_. ]?(\d{2,4})$")
-    regexIsMY = re.compile(r"(\d{1,2})[-/_. ]?(\d{2,4})$")
-    regexIsYM = re.compile(r"(\d{2,4})[-/_. ]?(\d{1,2})$")
-    regexIsY = re.compile(r"^(19[4-9][0-9]|(20)?[0-2][0-9])$")
 
     def __init__(self, password):
         self.password = password
@@ -74,38 +69,55 @@ class Password(object):
                 end += 1
                 yield (word[:start], word[end:], word[start:end])
 
-    def removeDelimiter(self, word):
+    def removeDelimiter(self, word, minNum=4):
         """Search for a delimiter between each character.
         Returns an array of changes and the modified string."""
         # word: "p-a-s-s-w-o-r-d"
         # word: "-p-a-s-s-2008"
         # word: "---$-$---@%"
         # check first character for delimiter
-        # if found, check
-        word = list(word)
+        # check every other character from there on
+        # minimum match length of 4 by default
+        count = 1
+        replaced = []
         if word[0] in Password.DELIMITERS:
-            for i in range(0, len(word)+1, 2):
-                pass
+            start = 0
         elif word[1] in Password.DELIMITERS:
-            pass
+            start = 1
+        else:
+            return replaced, word
+        for i in range(start, len(word), 2):
+            if word[i] == word[start]:
+                count += 1
+                replaced.append(i)
+            else:
+                break
+        if count >= minNum:
+            # do this separately since we can't modify while iterating
+            word = list(word)
+            for i in replaced[::-1]:
+                del word[i]
+            return replaced, ''.join(word)
+        return [], word
 
 
     def removeLeet(self, word):
         """Removes common letter and number/symbol substitutions.
         Can function as a generator, in case there is more than one
-        possible result (functionality is currently disabled for performance).
+        possible result (functionality is currently disabled for performance,
+        but will be needed with the pervasive i,l=1,1 and i,l=!,! replacements).
 
         Returns a tuple: (number of replacements made, word)."""
 
         result = [[]]
         replaced = []
         for index, char in enumerate(list(word)):
-            # Special exception for multiple un-leet choices:
+            # Special exception for multiple un-leeting choices:
             if char in self.LEET and len(self.LEET[char]) > 1:
                 result += copy.deepcopy(result)
-                for resultSub in result[:len(result)/2]:
+                for resultSub in result[:len(result) / 2]:
                     resultSub.append(self.LEET[char][0])
-                for resultSub in result[len(result)/2:]:
+                for resultSub in result[len(result) / 2:]:
                     resultSub.append(self.LEET[char][1])
                 replaced.append(index)
                 continue
@@ -137,7 +149,6 @@ class Password(object):
         index."""
 
         # TODO: Performance: find a way to reduce the number of searches
-
         word = self.parts[part].word
         mutations = []
         for prefix, suffix, sub in self.subPermutations(word, minLength=3):
@@ -145,13 +156,20 @@ class Password(object):
             if replaced:
                 mutations = [(Mutation('case', replaced))]
 
-            for replaced, sub in self.removeLeet(sub):
-                if self.searchDictionary(sub):
+            for replaced, subUnLeet in self.removeLeet(sub):
+                if self.searchDictionary(subUnLeet):
                     if replaced:
                         mutations.append(Mutation('leet', replaced))
                     # Replace part, indicate that it is a word
                     return self.addParts(
-                        part, prefix, suffix, sub, "word", mutations)
+                        part, prefix, suffix, subUnLeet, "word", mutations)
+                elif replaced:
+                    # Need to also check un-leeted word against special-
+                    # character wordlists
+                    if self.searchDictionary(sub):
+                        return self.addParts(
+                            part, prefix, suffix, sub, "word", mutations)
+
         return False
 
     def isYear(self, num):
@@ -236,16 +254,17 @@ class Password(object):
         return False
 
     def findKeyGraph(self, part):
-        """Finds common runs on the keyboard."""
-
+        """Finds common runs on the keyboard - coming soon!"""
+        pass
 
 def main():
     #pw = Password("((!11!No!5))01/49")
     #pw = Password("08-31-2004")
     #pw = Password("((substrings))$$$$are2008/10/22tricky")
-    pw = Password("<<notG00dP4$$word>>tim2008-08")
+    #pw = Password("<<notG00dP4$$word>>tim2008-08")
+    pw = Password("wpm,.op[456curwerrrytyk")
 
-    # Strictly done this way for testing
+    # Strictly for testing
     changed = 1
     while changed:
         changed = 0
