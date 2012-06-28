@@ -39,6 +39,7 @@ class Password(object):
         '%':['z']}
     COST = {}
     regexContainsLetters = re.compile(r"[a-zA-Z]")
+    regexIsDate = re.compile(r"(\d{1,4})([-/_. ])?(\d{1,2})\2?(\d{1,4})?$")
     regexIsYMD = re.compile(r"(\d{2,4})[-/_. ]?(\d{1,2})[-/_. ]?(\d{1,2})$")
     regexIsMDY = re.compile(r"(\d{1,2})[-/_. ]?(\d{1,2})[-/_. ]?(\d{2,4})$")
     regexIsMY = re.compile(r"(\d{1,2})[-/_. ]?(\d{2,4})$")
@@ -139,7 +140,7 @@ class Password(object):
 
         word = self.parts[part].word
         mutations = []
-        for prefix, suffix, sub in self.subPermutations(word, minLength=4):
+        for prefix, suffix, sub in self.subPermutations(word, minLength=3):
             replaced, sub = self.removeCase(sub)
             if replaced:
                 mutations = [(Mutation('case', replaced))]
@@ -153,15 +154,38 @@ class Password(object):
                         part, prefix, suffix, sub, "word", mutations)
         return False
 
-    def isDate(self, year, month, day=None):
-        """Return True if a date is valid, False if not. Month and Day can be
-        reversed, Year must be accurate (year is not currently used)."""
-        if not day:
-            if 1 <= month <= 12:
-                return True
-        elif (1 <= month <= 12 and 1 <= day <= 31) or (
-            1 <= day <= 12 and 1 <= month <= 31):
+    def isYear(self, num):
+        if (1940 <= num <= 2020) or (40 <= num <= 99) or (0 <= num <= 20):
             return True
+        return False
+
+    def isDate(self, place1, place2, place3):
+        """Return a date type if a date is valid, False if not. Day, Month, and
+        Year can be in any order. Does not currently check for valid days
+        depending on length of month."""
+        if not place2 and not place3:
+            # Y only
+            if self.isYear(place1):
+                return 'date-common-Y'
+        elif not place3:
+            # MD or YM
+            if (1 <= place1 <= 12 and 1 <= place2 <= 31) or (
+                1 <= place2 <= 12 and 1 <= place1 <= 31):
+                return 'date-common-MD'
+            elif (1 <= place1 <= 12 and self.isYear(place2)) or (
+                1 <= place2 <= 12 and self.isYear(place1)):
+                return 'date-common-YM'
+        else:
+            # YMD
+            if self.isYear(place1):
+                if (1 <= place2 <= 12 and 1 <= place3 <= 31) or (
+                    1 <= place3 <= 12 and 1 <= place2 <= 31):
+                    return 'date-common-YMD'
+            # Have to check both for dates such as 01/04/01
+            if self.isYear(place1):
+                if (1 <= place1 <= 12 and 1 <= place2 <= 31) or (
+                    1 <= place2 <= 12 and 1 <= place1 <= 31):
+                    return 'date-common-YMD'
         return False
 
     def addParts(self, part, prefix, suffix, sub, type, mutations=None):
@@ -173,58 +197,32 @@ class Password(object):
         return True
 
     def findDate(self, part = 0):
-        # TODO: Remove copypasta
-        """Search for a date in any possible format."""
+        """Search for a date in any possible format.
+        Performs a general regex for date formats, then validates digits."""
         word = self.parts[part].word
         for prefix, suffix, sub in self.subPermutations(word, minLength=4):
             if re.search(Password.regexContainsLetters, sub):
                 continue
-            result = re.match(Password.regexIsY, sub)
-            if result:
-                return self.addParts(
-                    part, prefix, suffix, sub, "date-common-Y")
-            result = re.match(Password.regexIsMDY, sub)
-            if result:
-                month, day, year = (
-                    int(result.group(1)),
-                    int(result.group(2)),
-                    int(result.group(3)))
-                if self.isDate(year, month, day):
-                    if 1940 <= int(year) <= 2020 or \
-                        (0 <= year <= 20 or 40 <= year <= 99):
-                        return self.addParts(
-                            part, prefix, suffix, sub, "date-common-MDY")
-                    else:
-                        return self.addParts(
-                            part, prefix, suffix, sub, "date-uncommon-MDY")
 
-            result = re.match(Password.regexIsMY, sub)
+            result = re.match(
+                r"(\d{1,4})([-/_. ])?(\d{1,4})?\2?(\d{1,4})?$", sub)
             if result:
-                month, year = (
-                    int(result.group(1)),
-                    int(result.group(2)))
-                if self.isDate(year, month):
-                    pass
-            result = re.match(Password.regexIsYMD, sub)
-            if result:
-                year, month, day = (
-                    int(result.group(1)),
-                    int(result.group(2)),
-                    int(result.group(3)))
-                if self.isDate(year, month, day):
-                    if 1940 <= int(year) <= 2020 or\
-                       (0 <= year <= 20 or 40 <= year <= 99):
-                        return self.addParts(
-                            part, prefix, suffix, sub, "date-common-YMD")
-                    else:
-                        return self.addParts(
-                            part, prefix, suffix, sub, "date-uncommon-YMD")
+                # Not sure what's a month, day, or year - let isDate decide
+                places = (
+                    result.group(1),
+                    result.group(3),
+                    result.group(4))
+                places = [int(x) if x is not None else None for x in places]
+                type = self.isDate(places[0], places[1], places[2])
+                if not type:
+                    return False
+                return self.addParts(
+                    part, prefix, suffix, sub, type)
         return False
 
     def findRepeated(self, part):
         """Finds repeated characters."""
         word = self.parts[part].word
-        print "checking {}".format(word)
         if len(collections.Counter(word)) > len(word) - 1:
             return False
 
@@ -242,10 +240,12 @@ class Password(object):
 
 
 def main():
-    pw = Password("((!11!No!5))01/49")
+    #pw = Password("((!11!No!5))01/49")
     #pw = Password("08-31-2004")
-    pw = Password("((substrings))$$$$are2008/10/22tricky")
+    #pw = Password("((substrings))$$$$are2008/10/22tricky")
+    pw = Password("<<notG00dP4$$word>>tim2008-08")
 
+    # Strictly done this way for testing
     changed = 1
     while changed:
         changed = 0
