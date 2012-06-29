@@ -1,5 +1,6 @@
 import cProfile
 
+layouts = []
 # New auto keygraph - thanks, Dan Wheeler (with modifications)
 layoutQwerty = """\
 `~ 1! 2@ 3# 4$ 5% 6^ 7& 8* 9( 0) -_ =+
@@ -9,10 +10,11 @@ xx zZ xX cC vV bB nN mM ,< .> /?"""
 
 class Keyboard(object):
     def __init__(self):
-        self.keys = []
+        self.keys = {}
 
     def addKey(self, key):
-        self.keys.append(key)
+        self.keys[key.key[0]] = key
+        self.keys[key.key[1]] = key
 
 class Key(object):
     def __init__(self, key, left, right, up, down):
@@ -27,30 +29,45 @@ class Key(object):
             self.key, self.left, self.right, self.up, self.down)
 
     def hasNeighbor(self, neighbor):
-        if neighbor in (self.left, self.right, self.up, self.down):
+        if neighbor in self.left or neighbor in self.right\
+            or neighbor in self.up or neighbor in self.down:
             return True
         return False
 
-def getOrNone(layout, y, x):
+def getOrEmpty(layout, y, x):
     if x < 0 or y < 0:
-        return None
+        return []
     try:
-        return layout[y][x]
+        return list(layout[y][x])
     except IndexError:
-        return None
+        return []
 
-def main():
+def isRun(word):
+    if not layouts:
+        createLayouts()
+    for layout in layouts:
+        for char, next in zip(word, word[1:]):
+            if not layout.keys[char].hasNeighbor(next):
+                return False
+    return True
+
+
+def createLayouts():
     layout = layoutQwerty.split("\n")
     layout = [['' if key == "xx" else key for key in row.split()] for row in layout]
     qwerty = Keyboard()
     for y in range(0, len(layout)):
         for x in range(0, len(layout[y])):
+            if not layout[y][x]:
+                continue
             qwerty.addKey(Key(
-                (layout[y][x]),
-                left=getOrNone(layout, y, x - 1),
-                right=getOrNone(layout, y, x + 1),
-                up=getOrNone(layout, y - 1, x),
-                down=getOrNone(layout, y + 1, x)))
+                (list(layout[y][x])),
+                left=getOrEmpty(layout, y, x - 1),
+                right=getOrEmpty(layout, y, x + 1),
+                up=getOrEmpty(layout, y - 1, x),
+                down=getOrEmpty(layout, y + 1, x)))
+    layouts.append(qwerty)
 
 if __name__ == "__main__":
-    cProfile.run('main()')
+    print isRun("qwerty")
+    #cProfile.run('isRun("qwert")')

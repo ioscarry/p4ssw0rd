@@ -1,5 +1,5 @@
 import copy, re, collections
-import word_list
+import word_list, key_graph
 import cProfile
 
 class Part(object):
@@ -253,16 +253,22 @@ class Password(object):
                               Mutation('case', replaced))
         return False
 
-    def findKeyGraph(self, part):
-        """Finds common runs on the keyboard - coming soon!"""
-        pass
+    def findKeyRun(self, part):
+        """Finds consecutive runs on the keyboard through graphs - minimum of
+        three is typical."""
+        word = self.parts[part].word
+        for prefix, suffix, sub in self.subPermutations(word, minLength=3):
+            if key_graph.isRun(sub):
+                return self.addParts(part, prefix, suffix, sub, 'keyboard')
+        return False
 
 def main():
     #pw = Password("((!11!No!5))01/49")
     #pw = Password("08-31-2004")
     #pw = Password("((substrings))$$$$are2008/10/22tricky")
     #pw = Password("<<notG00dP4$$word>>tim2008-08")
-    pw = Password("wpm,.op[456curwerrrytyk")
+    #pw = Password("wpm,.op[456curwerrrytyk")
+    pw = Password("1@3$qWeR")
 
     # Strictly for testing
     changed = 1
@@ -270,6 +276,9 @@ def main():
         changed = 0
         for part in range(0, len(pw.parts)):
             if pw.parts[part].type:
+                continue
+            if pw.findKeyRun(part):
+                changed = 1
                 continue
             if pw.findDate(part):
                 changed = 1
@@ -289,5 +298,5 @@ def main():
             print "Found part '{}'".format(part.word)
 
 if __name__ == "__main__":
-    cProfile.run('main()')
-    #main()
+    #cProfile.run('main()')
+    main()
