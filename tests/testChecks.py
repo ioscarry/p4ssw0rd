@@ -68,13 +68,48 @@ class TestFind(unittest.TestCase):
         self.assertEqual(pw.parts[0].type, "date-common-Y")
         self.assertEqual(pw.parts[0].mutations, [])
 
+    def testFindBorderSimple(self):
+        pw = pass_check.Password("!!aaaaaaaa!!")
+        pass_check.main(pw)
+        self.assertEqual(pw.parts[0].word, "!!")
+        self.assertEqual(pw.parts[0].type, "repetition")
+        self.assertEqual(pw.parts[0].mutations, [])
+        self.assertEqual(pw.parts[1].word, "aaaaaaaa")
+        self.assertEqual(pw.parts[1].type, "repetition")
+        self.assertEqual(pw.parts[1].mutations, [])
+        self.assertEqual(pw.parts[2].word, "!!")
+        self.assertEqual(pw.parts[2].type, "repetition")
+        self.assertEqual(pw.parts[2].mutations, [])
+
+    def testBinarySearch(self):
+        # First entry in tv-5000-10000.dic
+        pw = pass_check.Password("aaaah")
+        self.assertEqual(pw.findWord(), True)
+        self.assertEqual(pw.parts[0].word, "aaaah")
+        self.assertEqual(pw.parts[0].type, "word")
+        self.assertEqual(pw.parts[0].mutations, [])
+        # Last entry in cities.dic
+        pw = pass_check.Password("zyukayka")
+        self.assertEqual(pw.findWord(), True)
+        self.assertEqual(pw.parts[0].word, "zyukayka")
+        self.assertEqual(pw.parts[0].type, "word")
+        self.assertEqual(pw.parts[0].mutations, [])
+        # Middle entry in sports.dic
+        pw = pass_check.Password("polevault")
+        self.assertEqual(pw.findWord(), True)
+        self.assertEqual(pw.parts[0].word, "polevault")
+        self.assertEqual(pw.parts[0].type, "word")
+        self.assertEqual(pw.parts[0].mutations, [])
+
 class TestRemove(unittest.TestCase):
     def testRemoveCase(self):
         pw = pass_check.Password("aAaAaaAAaAA")
-        self.assertEqual(pw.removeCase(pw.parts[0].word), ([1, 3, 6, 7, 9, 10], "aaaaaaaaaaa"))
+        self.assertEqual(pw.removeCase(
+            pw.parts[0].word), ([1, 3, 6, 7, 9, 10], "aaaaaaaaaaa"))
 
         pw = pass_check.Password("34a90ReElo@A")
-        self.assertEqual(pw.removeCase(pw.parts[0].word), ([5, 7, 11], "34a90reelo@a"))
+        self.assertEqual(pw.removeCase(
+            pw.parts[0].word), ([5, 7, 11], "34a90reelo@a"))
 
     def testRemoveLeet(self):
         pw = pass_check.Password("0mg")
@@ -87,15 +122,20 @@ class TestRemove(unittest.TestCase):
 
     def testRemoveDelimiter(self):
         pw = pass_check.Password("p-a-s-s-w-o-r-d")
-        self.assertEqual(pw.removeDelimiter(pw.parts[0].word), ([1,3,5,7,9,11,13], "password"))
+        self.assertEqual(pw.removeDelimiter(
+            pw.parts[0].word), ([1,3,5,7,9,11,13], "password"))
         pw = pass_check.Password("-l-i-s-a-")
-        self.assertEqual(pw.removeDelimiter(pw.parts[0].word), ([0,2,4,6,8], "lisa"))
+        self.assertEqual(pw.removeDelimiter(
+            pw.parts[0].word), ([0,2,4,6,8], "lisa"))
         pw = pass_check.Password(".n.o.t.g.o.o.d2008")
-        self.assertEqual(pw.removeDelimiter(pw.parts[0].word), ([0,2,4,6,8,10,12], "notgood2008"))
+        self.assertEqual(pw.removeDelimiter(
+            pw.parts[0].word), ([0,2,4,6,8,10,12], "notgood2008"))
         pw = pass_check.Password(" h i m o m")
-        self.assertEqual(pw.removeDelimiter(pw.parts[0].word), ([0,2,4,6,8], "himom"))
+        self.assertEqual(pw.removeDelimiter(
+            pw.parts[0].word), ([0,2,4,6,8], "himom"))
         pw = pass_check.Password("f_a_il")
-        self.assertEqual(pw.removeDelimiter(pw.parts[0].word), ([], "f_a_il"))
+        self.assertEqual(pw.removeDelimiter(
+            pw.parts[0].word), ([], "f_a_il"))
 
 class TestOther(unittest.TestCase):
     def testSubPermutations(self):
@@ -128,7 +168,7 @@ class TestOther(unittest.TestCase):
 
 class TestCombined(unittest.TestCase):
     """Documentation for ideal cases. These may fail until problems are
-    solved."""
+    solved, or wordlists are finalized."""
     def testBorderConflict(self):
         """Tests that conflicts between borders and leet replacements are
         handled properly. Should read $$money$$ instead of $$moneys$."""
@@ -152,7 +192,7 @@ class TestCombined(unittest.TestCase):
         self.assertEqual(pw.parts[0].word, "!!")
         self.assertEqual(pw.parts[0].type, 'repetition')
         self.assertEqual(pw.parts[0].mutations, [])
-        self.assertEqual(pw.parts[1].word, "omg")
+        self.assertEqual(pw.parts[1].word, "omfg")
         self.assertEqual(pw.parts[1].type, 'word')
         self.assertEqual(pw.parts[1].mutations, [])
         self.assertEqual(pw.parts[2].word, "!!")
