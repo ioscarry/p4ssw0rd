@@ -127,18 +127,48 @@ class TestOther(unittest.TestCase):
             self.assertEqual(expected[index], (prefix, suffix, sub))
 
 class TestCombined(unittest.TestCase):
-    """Documentation for ideal cases. These will fail until these problems are
+    """Documentation for ideal cases. These may fail until problems are
     solved."""
     def testBorderConflict(self):
         """Tests that conflicts between borders and leet replacements are
-        handled properly."""
+        handled properly. Should read $$money$$ instead of $$moneys$."""
         pw = pass_check.Password("$$money$$")
-        self.assertEqual(
-            pw.parts,
-            [
-                pass_check.Part('$$', 'border-mirror', []),
-                pass_check.Part('money', 'word', []),
-                pass_check.Part('$$', 'border-mirror', [])])
+        pass_check.main(pw)
+        self.assertEqual(pw.parts[0].word, "$$")
+        self.assertEqual(pw.parts[0].type, 'repetition')
+        self.assertEqual(pw.parts[0].mutations, [])
+        self.assertEqual(pw.parts[1].word, "money")
+        self.assertEqual(pw.parts[1].type, 'word')
+        self.assertEqual(pw.parts[1].mutations, [])
+        self.assertEqual(pw.parts[2].word, "$$")
+        self.assertEqual(pw.parts[2].type, 'repetition')
+        self.assertEqual(pw.parts[2].mutations, [])
+
+    def testMultipleBorders(self):
+        """Tests two borders with an identical delimiter (should be picked up as
+        a single border with delimiter between two dictionary words)"""
+        pw = pass_check.Password("!!omfg!!tammy!!")
+        pass_check.main(pw)
+        self.assertEqual(pw.parts[0].word, "!!")
+        self.assertEqual(pw.parts[0].type, 'repetition')
+        self.assertEqual(pw.parts[0].mutations, [])
+        self.assertEqual(pw.parts[1].word, "omg")
+        self.assertEqual(pw.parts[1].type, 'word')
+        self.assertEqual(pw.parts[1].mutations, [])
+        self.assertEqual(pw.parts[2].word, "!!")
+        self.assertEqual(pw.parts[2].type, 'delimiter')
+        self.assertEqual(pw.parts[2].mutations, [])
+        self.assertEqual(pw.parts[3].word, "tammy")
+        self.assertEqual(pw.parts[3].type, 'word')
+        self.assertEqual(pw.parts[3].mutations, [])
+        self.assertEqual(pw.parts[4].word, "!!")
+        self.assertEqual(pw.parts[4].type, 'repetition')
+        self.assertEqual(pw.parts[4].mutations, [])
+
+
+
+
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -10,6 +10,11 @@ class Part(object):
         self.type = type
         self.mutations = mutations
 
+    def __repr__(self):
+        return "word: {}, type: {}, mutations: {}".format(
+            self.word, self.type, self.mutations
+        )
+
 class Mutation(object):
     def __init__(self, type, index):
         self.type = type
@@ -19,7 +24,8 @@ class Mutation(object):
         return "{}: {}".format(self.type, self.index)
 
 class Password(object):
-    SYMBOLS = list('`~!@#$%^&*()-_=+[{]}\\|;:\'",<.>/?')
+    SYMBOLS = tuple('`~!@#$%^&*()-_=+[{]}\\|;:\'",<.>/?')
+    BORDERS = ('xx','x','')
     DELIMITERS = list('/\\-. _=+&')
     LEET = {
         '4':['a'],
@@ -207,7 +213,10 @@ class Password(object):
         return False
 
     def addParts(self, part, prefix, suffix, sub, type, mutations=None):
-        self.parts[part] = Part(sub, type, mutations)
+        if sub:
+            self.parts[part] = Part(sub, type, mutations)
+        else:
+            del(self.parts[part])
         if suffix:
             self.parts.insert(part + 1, Part(suffix))
         if prefix:
@@ -262,16 +271,49 @@ class Password(object):
                 return self.addParts(part, prefix, suffix, sub, 'keyboard')
         return False
 
-def main():
-    #pw = Password("((!11!No!5))01/49")
-    #pw = Password("08-31-2004")
-    #pw = Password("((substrings))$$$$are2008/10/22tricky")
-    #pw = Password("<<notG00dP4$$word>>tim2008-08")
-    #pw = Password("wpm,.op[456curwerrrytyk")
-    pw = Password("1@3$qWeR")
+    def findBorder(self, part):
+        """Attempts to find common identical or mirrored borders, either with
+        or without additional suffixes."""
+        matches = {
+            "(":")",
+            "[":"]",
+            "{":"}",
+            "<":">"}
+        word = self.parts[part].word
+        # First look for borders with no suffix
+        # ex. $$money$$
+        regexBorder = re.compile(
+            r"(^[^a-zA-Z0-9]{{1,{0}}}).+\1".format(len(word) // 2))
+        result = re.search(regexBorder, word)
+        if result:
+            parts = re.split(r'({})'.format(re.escape(result.group(1))), word, 2)
+        else:
+            # Yow.
+            regexMirror = re.compile(
+                r"([(\[{{<])(\1{{0,{0}}}).+".format(len(word) // 2 - 1))
+            result = re.search(regexMirror, word)
+            if result:
+                # Get the matching character, multiply by length of match
+                right = matches[result.group(1)]
+                left = result.group(1) + result.group(2)
+                right *= len(left)
+                parts = re.split(
+                    r'({}|{})'.format(re.escape(left), re.escape(right)), word, 2)
+        if result:
+            return self.addParts(
+                part, parts[0] + parts[1],
+                parts[3] + parts[4], parts[2], None, None)
+        print "false!"
+        return False
 
+        # Next, look for a border with suffix
+        # ex. $$money$$2008
+
+def main(pw):
     # Strictly for testing
     changed = 1
+    # Attempt to find border characters before anything else
+    pw.findBorder(0)
     while changed:
         changed = 0
         for part in range(0, len(pw.parts)):
@@ -290,6 +332,7 @@ def main():
                 changed = 1
                 continue
 
+    # TODO: Compare parts against each other
     for part in pw.parts:
         if part.type:
             print "Found part '{}', type '{}', with mutations '{}'".format(
@@ -298,5 +341,12 @@ def main():
             print "Found part '{}'".format(part.word)
 
 if __name__ == "__main__":
+    #pw = Password("((!11!No!5))01/49")
+    #pw = Password("08-31-2004")
+    #pw = Password("((substrings))$$$$are2008/10/22tricky")
+    #pw = Password("<<notG00dP4$$word>>tim2008-08")
+    #pw = Password("wpm,.op[456curwerrrytyk")
+    pw = Password("$$money$$")
+    pw = Password("!!omfg!!tammy!!")
     #cProfile.run('main()')
-    main()
+    main(pw)
