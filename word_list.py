@@ -1,3 +1,11 @@
+"""
+Sources:
+ftp://ftp.openwall.com/pub/wordlists/
+http://www.skullsecurity.org/wiki/index.php/Passwords
+http://en.wiktionary.org/wiki/Wiktionary:Frequency_lists
+http://contest-2010.korelogic.com/wordlists.html
+"""
+
 import os, re
 import binary_search
 import cProfile
