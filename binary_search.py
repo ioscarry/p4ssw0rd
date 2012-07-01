@@ -1,18 +1,21 @@
 import os
 import cProfile
 
-def searchFile(f, term):
+def searchFile(f, search, low=None, high=None):
     """Does a binary search on a file object of unknown length. Returns a float
     of the position in the file if found, False if not."""
-    # TODO: Find a way to index the first and next character for performance
-    # TODO: Fix bug - first entry in file returns False
     f.seek(0, os.SEEK_END)
     size = f.tell()
-    low, high = 0, size - 1
+    if not low:
+        low = 0
+    if not high:
+        high = size - 1
     mid = (high + low) // 2
-    found = None
+    # Workaround to stop the first word from being missed
+    f.seek(low)
+    found = f.readline()
     i = 0
-    while found != term:
+    while found != search:
         temp = found
         mid = (high + low) // 2
         f.seek(mid)
@@ -20,16 +23,16 @@ def searchFile(f, term):
         found = f.readline().rstrip("\n").rstrip("\r")
         if found == temp:
             break
-        if found > term:
+        if found > search:
             high = mid
         else:
             low = mid
         i += 1
         if i > 250:
             raise Exception(
-                "infinite loop during binary search for {}".format(term))
+                "infinite loop during binary search for {}".format(search))
 
-    if found == term:
+    if found == search:
         return (mid * 1.0) / size
     else:
         return False

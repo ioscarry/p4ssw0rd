@@ -6,7 +6,7 @@ http://en.wiktionary.org/wiki/Wiktionary:Frequency_lists
 http://contest-2010.korelogic.com/wordlists.html
 """
 
-import os, re
+import os, re, mmap, string
 import binary_search
 import cProfile
 
@@ -15,22 +15,68 @@ regexNotLowercaseApostrophe = re.compile("[^a-z']")
 
 type = ['letter','number','letterapostrophe','combined']
 wordPath = "words"
+
+# Auto-generated from indexWordLists()
 wordFiles = [
-    {"name":"rockyou_top1000.dic",  "handle":None, "lines":1000,    "type":3},
-    {"name":"contemporaryfiction.dic","handle":None,"lines":0,      "type":0},
-    {"name":"contemporaryfiction-special.dic","handle":None,"lines":0,"type":2},
-    {"name":"english.dic",          "handle":None, "lines":639446,  "type":0},
-    {"name":"english-special.dic",  "handle":None, "lines":639446,  "type":2},
-    {"name":"tv-1-5000.dic",        "handle":None, "lines":4995,    "type":0},
-    {"name":"tv-1-5000-special.dic","handle":None, "lines":4995,    "type":2},
-    {"name":"names.dic",            "handle":None, "lines":4425,    "type":0},
-    {"name":"places.dic",           "handle":None, "lines":15450,   "type":0},
-    {"name":"cities.dic",           "handle":None, "lines":123011,  "type":0},
-    {"name":"tv-5000-10000.dic",    "handle":None, "lines":4995,    "type":0},
-    {"name":"tv-5000-10000-special.dic","handle":None,"lines":4995, "type":2},
-    {"name":"bible_books.dic",      "handle":None, "lines":81,      "type":0},
-    {"name":"sports.dic",           "handle":None, "lines":684,     "type":0},
-    {"name":"sports_proteams.dic",  "handle":None, "lines":130,     "type":0}]
+    {"name":"openwall-password.dic", "handle":None, "lines":2289, "type":3, "letterIndex":{'!': 0, '*': 34, '1': 86, '0': 37, '3': 324, '2': 292, '5': 344, '4': 329, '7': 399, '6': 369, '9': 434, '8': 410, 'A': 471, '@': 463, 'C': 1235, 'B': 758, 'E': 1912, 'D': 1679, 'G': 2230, 'F': 1983, 'I': 2700, 'H': 2453, 'K': 2967, 'J': 2752, 'M': 3260, 'L': 3092, 'O': 3630, 'N': 3546, 'Q': 4026, 'P': 3679, 'S': 4355, 'R': 4041, 'T': 5025, 'W': 5415, 'V': 5322, 'Y': 5609, 'X': 5601, 'Z': 5634, '_': 5680, 'a': 5683, 'c': 7345, 'b': 6432, 'e': 9159, 'd': 8488, 'g': 9944, 'f': 9408, 'i': 10915, 'h': 10486, 'k': 11664, 'j': 11143, 'm': 12315, 'l': 11925, 'o': 13731, 'n': 13348, 'q': 14731, 'p': 13868, 's': 15281, 'r': 14796, 'u': 17515, 't': 16821, 'w': 17754, 'v': 17547, 'y': 18230, 'x': 18185, 'z': 18284}},
+    {"name":"rockyou_top1000.dic", "handle":None, "lines":1000, "type":3, "letterIndex":{'1': 82, '0': 0, '3': 411, '2': 355, '5': 443, '4': 419, '7': 506, '6': 482, '9': 589, '8': 561, 'P': 627, 'a': 637, 'c': 1967, 'b': 1254, 'e': 3097, 'd': 2725, 'g': 3557, 'f': 3255, 'i': 4090, 'h': 3804, 'k': 4778, 'j': 4309, 'm': 5420, 'l': 4971, 'o': 6358, 'n': 6184, 'q': 6938, 'p': 6425, 's': 7229, 'r': 6982, 'u': 8450, 't': 8124, 'w': 8574, 'v': 8470, 'y': 8714, 'x': 8689, 'z': 8748}},
+    {"name":"bible_books.dic", "handle":None, "lines":81, "type":3, "letterIndex":{'a': 0, 'c': 12, 'e': 108, 'd': 77, 'g': 184, 'i': 267, 'h': 223, 'k': 333, 'j': 275, 'm': 391, 'l': 340, 'o': 448, 'n': 422, 'p': 474, 's': 614, 'r': 578, 't': 673, 'z': 713}},
+    {"name":"tv-1-5000-special.dic", "handle":None, "lines":164, "type":3, "letterIndex":{'a': 0, 'c': 100, 'b': 64, 'e': 244, 'd': 175, 'g': 350, 'f': 309, 'i': 484, 'h': 381, 'k': 585, 'j': 532, 'm': 630, 'l': 592, 'o': 756, 'n': 707, 'p': 828, 's': 870, 'r': 859, 't': 995, 'w': 1180, 'v': 1156, 'y': 1385}},
+    {"name":"tv-1-5000.dic", "handle":None, "lines":4832, "type":0, "letterIndex":{'a': 0, 'c': 4900, 'b': 2426, 'e': 10890, 'd': 8638, 'g': 14169, 'f': 12343, 'i': 16831, 'h': 15337, 'k': 18538, 'j': 17907, 'm': 20519, 'l': 19034, 'o': 23289, 'n': 22492, 'q': 26864, 'p': 24024, 's': 28823, 'r': 27011, 'u': 35678, 't': 33485, 'w': 36564, 'v': 36177, 'y': 38024, 'x': 38013, 'z': 38211}},
+    {"name":"tv-5000-10000-special.dic", "handle":None, "lines":231, "type":3, "letterIndex":{'a': 0, 'c': 310, 'b': 133, 'e': 663, 'd': 523, 'g': 757, 'f': 716, 'i': 920, 'h': 849, 'k': 1036, 'j': 943, 'm': 1241, 'l': 1143, 'o': 1460, 'n': 1400, 'p': 1488, 's': 1710, 'r': 1605, 't': 1887, 'w': 2006, 'v': 1978, 'y': 2099}},
+    {"name":"tv-5000-10000.dic", "handle":None, "lines":4765, "type":0, "letterIndex":{'a': 0, 'c': 4933, 'b': 2546, 'e': 12103, 'd': 9422, 'g': 15442, 'f': 13750, 'i': 18300, 'h': 16728, 'k': 20477, 'j': 19898, 'm': 22263, 'l': 20852, 'o': 25280, 'n': 24569, 'q': 29493, 'p': 26196, 's': 32264, 'r': 29642, 'u': 39167, 't': 37195, 'w': 40586, 'v': 39699, 'y': 41864, 'z': 41981}},
+    {"name":"english-tiny-cap.dic", "handle":None, "lines":235, "type":2, "letterIndex":{'A': 0, 'C': 219, 'B': 122, 'E': 409, 'D': 334, 'G': 505, 'F': 481, 'I': 669, 'H': 587, 'K': 876, 'J': 768, 'M': 993, 'L': 919, 'O': 1203, 'N': 1146, 'Q': 1312, 'P': 1230, 'S': 1373, 'R': 1320, 'U': 1597, 'T': 1509, 'W': 1643, 'V': 1605, 'Y': 1668, 'Z': 1687}},
+    {"name":"english-tiny-lower.dic", "handle":None, "lines":27414, "type":0, "letterIndex":{'a': 0, 'c': 31720, 'b': 17213, 'e': 73873, 'd': 59026, 'g': 95642, 'f': 84553, 'i': 113602, 'h': 103501, 'k': 128362, 'j': 126203, 'm': 137892, 'l': 130175, 'o': 157736, 'n': 152163, 'q': 186642, 'p': 164104, 's': 199044, 'r': 188107, 'u': 238597, 't': 225289, 'w': 250959, 'v': 245732, 'y': 258520, 'x': 258368, 'z': 259378}},
+    {"name":"contemporaryfiction-special.dic", "handle":None, "lines":54, "type":3, "letterIndex":{'a': 0, 'c': 15, 'd': 32, 'g': 61, 'i': 122, 'h': 71, 'm': 170, 'o': 196, 'n': 186, 's': 205, 't': 238, 'w': 290, 'y': 376}},
+    {"name":"contemporaryfiction.dic", "handle":None, "lines":1946, "type":0, "letterIndex":{'a': 0, 'c': 1833, 'b': 831, 'e': 3916, 'd': 3147, 'g': 5373, 'f': 4488, 'i': 6464, 'h': 5850, 'k': 6884, 'j': 6790, 'm': 7454, 'l': 6991, 'o': 8396, 'n': 8081, 'q': 9624, 'p': 8646, 's': 10288, 'r': 9689, 'u': 13207, 't': 12317, 'w': 13446, 'v': 13391, 'y': 14128}},
+    {"name":"names.dic", "handle":None, "lines":11509, "type":3, "letterIndex":{'a': 0, 'c': 12680, 'b': 7685, 'e': 25873, 'd': 20521, 'g': 32965, 'f': 30116, 'i': 40568, 'h': 37314, 'k': 47069, 'j': 41970, 'm': 56896, 'l': 51318, 'o': 67305, 'n': 64736, 'q': 71050, 'p': 68605, 's': 76079, 'r': 71285, 'u': 86887, 't': 82500, 'w': 88941, 'v': 87178, 'y': 90970, 'x': 90846, 'z': 91624}},
+    {"name":"numbers_as_words.dic", "handle":None, "lines":576, "type":0, "letterIndex":{'b': 0, 'e': 342, 'f': 1272, 'h': 2400, 'm': 2742, 'o': 3672, 'n': 3084, 's': 3918, 't': 5094}},
+    {"name":"english-small-alnum.dic", "handle":None, "lines":12, "type":2, "letterIndex":{'1': 0, '3': 20, '2': 11, '5': 34, '4': 29, '7': 44, '6': 39, '9': 54, '8': 49}},
+    {"name":"english-small-cap.dic", "handle":None, "lines":28326, "type":2, "letterIndex":{'A': 0, 'C': 46015, 'B': 28798, 'E': 88254, 'D': 76787, 'G': 105391, 'F': 99203, 'I': 132371, 'H': 117476, 'K': 142465, 'J': 137682, 'M': 160747, 'L': 148363, 'O': 190929, 'N': 183143, 'Q': 226728, 'P': 198072, 'S': 235884, 'R': 227632, 'U': 281709, 'T': 263983, 'W': 288011, 'V': 283937, 'Y': 293752, 'X': 292698, 'Z': 295228}},
+    {"name":"english-small-lower.dic", "handle":None, "lines":296802, "type":0, "letterIndex":{'a': 0, 'c': 382098, 'b': 224942, 'e': 844713, 'd': 674645, 'g': 1077146, 'f': 973542, 'i': 1295971, 'h': 1168916, 'k': 1454688, 'j': 1434291, 'm': 1565638, 'l': 1482545, 'o': 1842792, 'n': 1746738, 'q': 2308373, 'p': 1962149, 's': 2487167, 'r': 2325620, 'u': 3016122, 't': 2844696, 'w': 3283175, 'v': 3235156, 'y': 3344352, 'x': 3340202, 'z': 3352357}},
+    {"name":"english-small-mixed.dic", "handle":None, "lines":70, "type":3, "letterIndex":{'a': 38, 'c': 53, 'E': 8, 'd': 70, "'": 0, 'I': 16, 'h': 102, 'm': 209, 'l': 202, 'o': 245, 'n': 236, 'i': 154, 's': 252, 't': 293, 'w': 382, 'y': 509, 'e': 94}},
+    {"name":"cities.dic", "handle":None, "lines":123011, "type":2, "letterIndex":{'a': 0, 'c': 170178, 'b': 60156, 'e': 294197, 'd': 243476, 'g': 332322, 'f': 313660, 'i': 416564, 'h': 380598, 'k': 457748, 'j': 437080, 'm': 605312, 'l': 556084, 'o': 751524, 'n': 709142, 'q': 841654, 'p': 773111, 's': 884663, 'r': 845190, 'u': 1038164, 't': 980943, 'w': 1081785, 'v': 1051389, 'y': 1100876, 'x': 1099671, 'z': 1110308}},
+    {"name":"places.dic", "handle":None, "lines":15450, "type":3, "letterIndex":{'a': 0, 'c': 18672, 'b': 5551, 'e': 38925, 'd': 33825, 'g': 52352, 'f': 45734, 'i': 68120, 'h': 59785, 'k': 71357, 'j': 69698, 'm': 85298, 'l': 75615, 'o': 107307, 'n': 99394, 'q': 121223, 'p': 111069, 's': 128564, 'r': 121619, 'u': 152879, 't': 146936, 'w': 155949, 'v': 153753, 'y': 167280, 'x': 167273, 'z': 167977}},
+    {"name":"sports.dic", "handle":None, "lines":684, "type":3, "letterIndex":{'4': 0, '7': 21, '6': 15, 'a': 28, 'c': 1080, 'b': 280, 'e': 1834, 'd': 1641, 'g': 2561, 'f': 1998, 'i': 3144, 'h': 2721, 'k': 3436, 'j': 3341, 'm': 3877, 'l': 3675, 'o': 4279, 'n': 4168, 'q': 4863, 'p': 4384, 's': 5573, 'r': 4876, 'u': 7254, 't': 6734, 'w': 7454, 'v': 7415, 'y': 7742, 'x': 7732}},
+    {"name":"sports_proteams.dic", "handle":None, "lines":130, "type":3, "letterIndex":{'a': 0, 'c': 216, 'b': 60, 'e': 393, 'd': 351, 'g': 461, 'f': 430, 'i': 510, 'h': 488, 'k': 551, 'j': 530, 'm': 593, 'l': 566, 'o': 696, 'n': 670, 'p': 722, 's': 956, 'r': 805, 'u': 1126, 't': 1071, 'w': 1150, 'v': 1141, 'y': 1180}},
+    {"name":"english-large-acronym.dic", "handle":None, "lines":5959, "type":3, "letterIndex":{'A': 0, 'C': 4584, 'B': 2752, 'E': 9115, 'D': 7212, 'G': 11928, 'F': 10584, 'I': 13663, 'H': 12846, 'K': 15812, 'J': 15350, 'M': 17467, 'L': 16204, 'O': 21448, 'N': 19551, 'Q': 24199, 'P': 22580, 'S': 26184, 'R': 24505, 'U': 30294, 'T': 28972, 'W': 32195, 'V': 31344, 'Y': 33166, 'X': 32920, 'Z': 33341}},
+    {"name":"english-large-alnum.dic", "handle":None, "lines":61, "type":2, "letterIndex":{'1': 0, '3': 20, '2': 11, '5': 47, '4': 33, '7': 57, '6': 52, '9': 67, '8': 62, 'A': 72, 'C': 102, 'B': 96, 'E': 106, 'F': 112, 'I': 117, 'K': 124, 'M': 157, 'L': 132, 'O': 162, 'P': 171, 'S': 195, 'R': 188, 'T': 201, 'W': 239, 'V': 231, 'X': 244, 'a': 255, 'h': 259, 'r': 308}},
+    {"name":"english-large-cap.dic", "handle":None, "lines":71724, "type":2, "letterIndex":{'A': 0, 'C': 103826, 'B': 56325, 'E': 195975, 'D': 167630, 'G': 239976, 'F': 220706, 'I': 307346, 'H': 271313, 'K': 332753, 'J': 319169, 'M': 387646, 'L': 355093, 'O': 457591, 'N': 439406, 'Q': 522881, 'P': 472634, 'S': 549096, 'R': 525076, 'U': 646092, 'T': 609988, 'W': 662015, 'V': 650677, 'Y': 681147, 'X': 679778, 'Z': 685040}},
+    {"name":"english-large-lower.dic", "handle":None, "lines":390516, "type":0, "letterIndex":{'a': 0, 'c': 505277, 'b': 303972, 'e': 1116684, 'd': 891386, 'g': 1423145, 'f': 1289806, 'i': 1716988, 'h': 1546804, 'k': 1918685, 'j': 1889613, 'm': 2070018, 'l': 1958746, 'o': 2500392, 'n': 2315349, 'q': 3107951, 'p': 2661162, 's': 3331926, 'r': 3129059, 'u': 4014362, 't': 3795639, 'w': 4378086, 'v': 4315500, 'y': 4453333, 'x': 4447590, 'z': 4463779}},
+    {"name":"english-large-mixed.dic", "handle":None, "lines":196179, "type":3, "letterIndex":{'$': 0, "'": 25, '&': 21, '(': 356, '-': 380, '1': 5076, '3': 5183, '2': 5157, '5': 5268, '4': 5253, '7': 5291, '6': 5282, '9': 5309, '8': 5300, 'A': 5318, 'C': 57986, 'B': 33107, 'E': 100919, 'D': 87414, 'G': 126119, 'F': 112169, 'I': 153777, 'H': 141387, 'K': 174601, 'J': 163804, 'M': 199270, 'L': 182110, 'O': 238919, 'N': 224960, 'Q': 272072, 'P': 245206, 'S': 285497, 'R': 273623, 'U': 326091, 'T': 313261, 'W': 338175, 'V': 332255, 'Y': 348345, 'X': 347641, 'Z': 350221, '\\': 351137, 'a': 351237, 'c': 672055, 'b': 481827, 'e': 1009934, 'd': 895962, 'g': 1200574, 'f': 1069995, 'i': 1415363, 'h': 1302424, 'k': 1501025, 'j': 1484730, 'm': 1619649, 'l': 1522473, 'o': 1788210, 'n': 1728187, 'q': 2037163, 'p': 1848686, 's': 2182559, 'r': 2074922, 'u': 2740766, 't': 2535387, 'w': 2801083, 'v': 2768942, 'y': 2927586, 'x': 2926919, 'z': 2938341}},
+    {"name":"english-extra-acronym.dic", "handle":None, "lines":19182, "type":3, "letterIndex":{'A': 0, 'C': 28547, 'B': 19297, 'E': 55818, 'D': 46611, 'G': 73833, 'F': 63805, 'I': 86445, 'H': 79988, 'K': 99734, 'J': 97308, 'M': 109035, 'L': 102974, 'O': 133892, 'N': 121558, 'Q': 150870, 'P': 140361, 'S': 158803, 'R': 151752, 'U': 189483, 'T': 178595, 'W': 200527, 'V': 196940, 'Y': 207516, 'X': 206265, 'Z': 208431}},
+    {"name":"english-extra-alnum.dic", "handle":None, "lines":1628, "type":2, "letterIndex":{'A': 0, 'C': 753, 'B': 447, 'E': 1365, 'D': 1080, 'G': 2174, 'F': 1664, 'I': 2754, 'H': 2466, 'K': 3075, 'J': 2982, 'M': 3710, 'L': 3534, 'O': 4938, 'N': 4405, 'Q': 5703, 'P': 5377, 'S': 6194, 'R': 5942, 'U': 6786, 'T': 6545, 'W': 7312, 'V': 6960, 'Y': 7953, 'X': 7769, 'Z': 8056, 'a': 8264, 'c': 8491, 'b': 8401, 'e': 9025, 'd': 8866, 'g': 9302, 'f': 9199, 'i': 9436, 'h': 9322, 'k': 9489, 'j': 9480, 'm': 9637, 'l': 9582, 'o': 9991, 'n': 9824, 'q': 10176, 'p': 10049, 's': 10352, 'r': 10227, 'u': 10604, 't': 10486, 'w': 10696, 'v': 10666, 'x': 10860}},
+    {"name":"english-extra-cap.dic", "handle":None, "lines":34, "type":2, "letterIndex":{'A': 0, 'C': 54, 'B': 47, 'D': 93, 'F': 112, 'I': 130, 'H': 120, 'K': 164, 'J': 155, 'M': 193, 'L': 180, 'N': 202, 'P': 208, 'S': 237, 'R': 227, 'W': 266, 'V': 256, 'Y': 293, 'X': 286}},
+    {"name":"english-extra-lower.dic", "handle":None, "lines":444665, "type":0, "letterIndex":{'a': 0, 'c': 451197, 'b': 236515, 'e': 956762, 'd': 736609, 'g': 1319110, 'f': 1173714, 'i': 1623106, 'h': 1470928, 'k': 1840619, 'j': 1765181, 'm': 2133023, 'l': 1980096, 'o': 2558211, 'n': 2406265, 'q': 2874574, 'p': 2644007, 's': 3084870, 'r': 2897344, 'u': 3700717, 't': 3482163, 'w': 3869320, 'v': 3775813, 'y': 4026498, 'x': 3970344, 'z': 4074139}},
+    {"name":"english-extra-mixed.dic", "handle":None, "lines":113181, "type":3, "letterIndex":{'A': 0, 'C': 44169, 'B': 24966, 'E': 117402, 'D': 92806, 'G': 145521, 'F': 130347, 'I': 170499, 'H': 157432, 'K': 192162, 'J': 186250, 'M': 213878, 'L': 199356, 'O': 266870, 'N': 250729, 'Q': 300327, 'P': 276528, 'S': 314663, 'R': 302241, 'U': 370356, 'T': 351482, 'W': 388376, 'V': 379904, 'Y': 406790, 'X': 399883, 'Z': 408796, 'a': 410712, 'c': 503823, 'b': 460608, 'e': 619976, 'd': 571700, 'g': 733760, 'f': 655507, 'i': 789503, 'h': 756805, 'k': 822783, 'j': 814420, 'm': 874479, 'l': 835985, 'o': 978658, 'n': 929704, 'q': 1061449, 'p': 1004755, 's': 1102544, 'r': 1065690, 'u': 1243534, 't': 1190170, 'w': 1271390, 'v': 1259864, 'y': 1300744, 'x': 1296445, 'z': 1308287}},
+]
+
+def indexWordLists():
+    for fn in os.listdir(wordPath):
+        if not fn.endswith(".dic"):
+            continue
+        size = os.stat(os.path.join(wordPath, fn)).st_size
+        f = open(os.path.join(wordPath, fn), "r")
+        contents = mmap.mmap(f.fileno(), size, access=mmap.ACCESS_READ)
+
+        letterIndex = {}
+        for letter in sorted(string.printable):
+            result = re.search(r"^{}".format(re.escape(letter)), contents, re.M)
+            if result:
+                letterIndex[letter] = result.start()
+        if re.search(r"[^a-zA-Z0-9'\n\r]", contents):
+            type = 3
+        elif re.search(r"[^a-z'\n\r]", contents):
+            type = 2
+        elif not re.search(r"[^0-9\n\r]", contents):
+            type = 1
+        else:
+            type = 0
+        lines = 0
+        while contents.readline():
+            lines += 1
+        print '{{"name":"{}", "handle":None, "lines":{}, "type":{}, "letterIndex":{}}},'.format(
+            fn, lines, type, letterIndex)
 
 def openFiles():
     for fn in wordFiles:
@@ -41,11 +87,20 @@ def findWord(word):
     if wordFiles[0]["handle"] is None:
         openFiles()
 
+    # Get the ASCII letter or character after the first
+    first = word[0]
+    next = chr(ord(first) + 1)
+
     lineCount = 0
     for fn in wordFiles:
         if re.search(regexNotLowercase, word) and fn["type"] == 0:
             continue
-        location = binary_search.searchFile(fn["handle"], word)
+        #print "Searching file: {} for term: {}".format(fn["name"], word)
+        location = binary_search.searchFile(
+            fn["handle"],
+            word,
+            fn["letterIndex"].get(first, None),
+            fn["letterIndex"].get(next, None))
         if location:
             return lineCount + int(location * fn["lines"])
         else:
@@ -53,4 +108,5 @@ def findWord(word):
     return False
 
 if __name__ == "__main__":
-    cProfile.run("findWord('illinois')")
+    #cProfile.run("findWord('illinois')")
+    indexWordLists()
