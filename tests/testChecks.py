@@ -69,12 +69,12 @@ class TestFind(unittest.TestCase):
         self.assertEqual(pw.parts[0].mutations, [])
 
     def testFindBorderSimple(self):
-        pw = pass_check.Password("!!aaaaaaaa!!")
-        pass_check.main(pw)
+        pw = pass_check.Password("!!,,,,,,,,!!")
+        pass_check.findParts(pw)
         self.assertEqual(pw.parts[0].word, "!!")
         self.assertEqual(pw.parts[0].type, "repetition")
         self.assertEqual(pw.parts[0].mutations, [])
-        self.assertEqual(pw.parts[1].word, "aaaaaaaa")
+        self.assertEqual(pw.parts[1].word, ",,,,,,,,")
         self.assertEqual(pw.parts[1].type, "repetition")
         self.assertEqual(pw.parts[1].mutations, [])
         self.assertEqual(pw.parts[2].word, "!!")
@@ -82,22 +82,22 @@ class TestFind(unittest.TestCase):
         self.assertEqual(pw.parts[2].mutations, [])
 
     def testBinarySearch(self):
-        # First entry in tv-5000-10000.dic
-        pw = pass_check.Password("aaaah")
+        # First entry in 9.dic
+        pw = pass_check.Password("'prentice")
         self.assertEqual(pw.findWord(), True)
-        self.assertEqual(pw.parts[0].word, "aaaah")
+        self.assertEqual(pw.parts[0].word, "'prentice")
         self.assertEqual(pw.parts[0].type, "word")
         self.assertEqual(pw.parts[0].mutations, [])
-        # Last entry in cities.dic
-        pw = pass_check.Password("zyukayka")
+        # Last entry in 7.dic
+        pw = pass_check.Password("zzzzzzy")
         self.assertEqual(pw.findWord(), True)
-        self.assertEqual(pw.parts[0].word, "zyukayka")
+        self.assertEqual(pw.parts[0].word, "zzzzzzy")
         self.assertEqual(pw.parts[0].type, "word")
         self.assertEqual(pw.parts[0].mutations, [])
-        # Middle entry in sports.dic
-        pw = pass_check.Password("polevault")
+        # Middle entry in 14.dic
+        pw = pass_check.Password("longways dance")
         self.assertEqual(pw.findWord(), True)
-        self.assertEqual(pw.parts[0].word, "polevault")
+        self.assertEqual(pw.parts[0].word, "longways dance")
         self.assertEqual(pw.parts[0].type, "word")
         self.assertEqual(pw.parts[0].mutations, [])
 
@@ -173,7 +173,7 @@ class TestCombined(unittest.TestCase):
         """Tests that conflicts between borders and leet replacements are
         handled properly. Should read $$money$$ instead of $$moneys$."""
         pw = pass_check.Password("$$money$$")
-        pass_check.main(pw)
+        pass_check.findParts(pw)
         self.assertEqual(pw.parts[0].word, "$$")
         self.assertEqual(pw.parts[0].type, 'repetition')
         self.assertEqual(pw.parts[0].mutations, [])
@@ -187,12 +187,12 @@ class TestCombined(unittest.TestCase):
     def testMultipleBorders(self):
         """Tests two borders with an identical delimiter (should be picked up as
         a single border with delimiter between two dictionary words)"""
-        pw = pass_check.Password("!!omfg!!tammy!!")
-        pass_check.main(pw)
+        pw = pass_check.Password("!!tim!!tammy!!")
+        pass_check.findParts(pw)
         self.assertEqual(pw.parts[0].word, "!!")
         self.assertEqual(pw.parts[0].type, 'repetition')
         self.assertEqual(pw.parts[0].mutations, [])
-        self.assertEqual(pw.parts[1].word, "omfg")
+        self.assertEqual(pw.parts[1].word, "tim")
         self.assertEqual(pw.parts[1].type, 'word')
         self.assertEqual(pw.parts[1].mutations, [])
         self.assertEqual(pw.parts[2].word, "!!")
@@ -204,11 +204,6 @@ class TestCombined(unittest.TestCase):
         self.assertEqual(pw.parts[4].word, "!!")
         self.assertEqual(pw.parts[4].type, 'repetition')
         self.assertEqual(pw.parts[4].mutations, [])
-
-
-
-
-
 
 if __name__ == "__main__":
     unittest.main()

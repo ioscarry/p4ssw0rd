@@ -1,28 +1,70 @@
 #!/usr/local/bin/python2.7
-import copy, re, collections
+import copy, re, string
 import word_list, key_graph, cleanup
 import cProfile
 
 class Part(object):
-    def __init__(self, word, type=None, mutations=None):
+    def __init__(self, word, type=None, mutations=None, cost=1, pattern=None):
         if mutations is None: mutations = []
-        if not isinstance(mutations, list): mutations = [mutations]
+        if not isinstance(mutations, list):
+            mutations = [mutations]
         self.word = word
         self.type = type
         self.mutations = mutations
+        self.pattern = pattern
+        self._cost = cost
 
     def __repr__(self):
         return "word: {}, type: {}, mutations: {}".format(
-            self.word, self.type, self.mutations
+            self.word, self.type, self.mutations, self.pattern
         )
 
+    def _getCost(self):
+        multi = 1
+        for mutation in self.mutations:
+            multi *= mutation.cost
+        return self._cost * multi
+
+    cost = property(_getCost)
+
 class Mutation(object):
+    typeCost = {
+        "delimiter": 20,
+        "leet": 64,
+        "charSwap": 49,
+        "charRemove": 49,
+        "charDupe": 49
+    }
+
     def __init__(self, type, index):
         self.type = type
         self.index = index
 
     def __repr__(self):
         return "{}: {}".format(self.type, self.index)
+
+    def _getCost(self):
+        if type == "case":
+            if self.index == "[0]":
+                return 2
+            else:
+                return len(self.index)
+        if type == "upper":
+            return 3
+        if type == "leet":
+            return 64
+        if type == "delimiter":
+            return 20
+        if type in ("charSwap", "charDupe", "charRemove"):
+            if len(self.index) == 1:
+                return self.index[0]
+            else:
+                return len(self.index) * 8
+        return 1
+
+
+    cost = property(_getCost)
+
 
 class Password(object):
     SYMBOLS = tuple('`~!@#$%^&*()-_=+[{]}\\|;:\'",<.>/?')
@@ -44,9 +86,10 @@ class Password(object):
         '$':['s'],
         '7':['t'],
         '%':['z']}
-    COST = {}
     regexContainsLetters = re.compile(r"[a-zA-Z]")
-    regexIsDate = re.compile(r"(\d{1,4})([-/_. ])?(\d{1,2})\2?(\d{1,4})?$")
+    regexMirror = re.compile(r"([(\[{{<])(\1{0,10}).+")
+    regexBorder = re.compile(r"(^[^a-zA-Z0-9]{1,10}).+\1")
+    regexDate = re.compile(r"(\d{1,4})([-/_. ])?(\d{1,4})?\2?(\d{1,4})?$")
 
     def __init__(self, password):
         # TODO: Save type of each character (lower, number, symbol) to avoid so many regex calls later
@@ -54,19 +97,7 @@ class Password(object):
         self.parts = [Part(password)]
 
     def subPermutations(self, word, maxLength=20, minLength=4):
-        """Generates all possible substrings, from longest to shortest.
-        minLength of 2:
-        words   [:]
-        word    [0:4]
-        ords    [1:5]
-        wor     [0:3]
-        ord     [1:4]
-        rds     [2:5]
-        wo      [0:2]
-        or      [1:3]
-        rd      [2:4]
-        ds      [3:5]
-        """
+        """Generates all possible substrings, from longest to shortest."""
         length = len(word)
         endRange = length - minLength + 2
         for i in range(0, endRange):
@@ -158,25 +189,34 @@ class Password(object):
 
         # TODO: Performance: find a way to reduce the number of searches
         word = self.parts[part].word
-        mutations = []
         for prefix, suffix, sub in self.subPermutations(word, minLength=3):
-            replaced, sub = self.removeCase(sub)
+            mutations = []
+            replaced, sub = self.removeDelimiter(sub)
             if replaced:
-                mutations = [(Mutation('case', replaced))]
+                mutations.append(Mutation('delimiter', replaced))
+            replaced, sub = self.removeCase(sub)
+            if replaced and len(replaced) == len(sub):
+                mutations.append((Mutation('upper', replaced)))
+            else:
+                mutations.append((Mutation('case', replaced)))
 
             for replaced, subUnLeet in self.removeLeet(sub):
-                if self.searchDictionary(subUnLeet):
+                cost = self.searchDictionary(subUnLeet)
+                if cost:
                     if replaced:
                         mutations.append(Mutation('leet', replaced))
                     # Replace part, indicate that it is a word
                     return self.addParts(
-                        part, prefix, suffix, subUnLeet, "word", mutations)
+                        part, Part(prefix), Part(suffix),
+                        Part(subUnLeet, "word", mutations, cost))
                 elif replaced:
                     # Need to also check un-leeted word against special-
                     # character wordlists
-                    if self.searchDictionary(sub):
+                    cost = self.searchDictionary(sub)
+                    if cost:
                         return self.addParts(
-                            part, prefix, suffix, sub, "word", mutations)
+                            part, Part(prefix), Part(suffix),
+                            Part(sub, "word", mutations, cost))
 
         return False
 
@@ -214,15 +254,15 @@ class Password(object):
                     return 'date-common-YMD'
         return False
 
-    def addParts(self, part, prefix, suffix, sub, type, mutations=None):
-        if sub:
-            self.parts[part] = Part(sub, type, mutations)
+    def addParts(self, part, prefix, suffix, sub):
+        if sub.word:
+            self.parts[part] = sub
         else:
             del(self.parts[part])
-        if suffix:
-            self.parts.insert(part + 1, Part(suffix))
-        if prefix:
-            self.parts.insert(part, Part(prefix))
+        if suffix.word:
+            self.parts.insert(part + 1, suffix)
+        if prefix.word:
+            self.parts.insert(part, prefix)
         return True
 
     def findDate(self, part = 0):
@@ -233,8 +273,7 @@ class Password(object):
             if re.search(Password.regexContainsLetters, sub):
                 continue
 
-            result = re.match(
-                r"(\d{1,4})([-/_. ])?(\d{1,4})?\2?(\d{1,4})?$", sub)
+            result = re.match(self.regexDate, sub)
             if result:
                 # Not sure what's a month, day, or year - let isDate decide
                 places = (
@@ -246,23 +285,45 @@ class Password(object):
                 if not type:
                     return False
                 return self.addParts(
-                    part, prefix, suffix, sub, type)
+                    part, Part(prefix), Part(suffix), Part(sub, type))
         return False
+
+    def isRepeated(self, first, word):
+        """Improve efficiency over collections.Counter()"""
+        for char in word:
+            if char != first:
+                return False
+        return True
+
+    def charCost(self, word):
+        """Return cost for repeated character"""
+        if word[0] in string.digits:
+            return 10 * len(word)
+        elif word[0] in string.ascii_lowercase:
+            return 26 * len(word)
+        elif word[0] in string.ascii_uppercase:
+            return 52 * len(word)
+        return 94 * len(word)
 
     def findRepeated(self, part):
         """Finds repeated characters."""
         word = self.parts[part].word
-        # TODO: Replace this (performance)
-        if len(collections.Counter(word)) > len(word) - 1:
-            return False
-
         for prefix, suffix, sub in self.subPermutations(word, minLength=2):
-            if len(collections.Counter(sub)) == 1:
-                return self.addParts(part, prefix, suffix, sub, 'repetition')
-            elif len(collections.Counter(sub.lower())) == 1:
+            mutations = []
+            if self.isRepeated(sub[0], sub):
+                cost = self.charCost(sub)
+                return self.addParts(
+                    part, Part(prefix), Part(suffix), Part(sub, 'repetition', cost=cost))
+            elif self.isRepeated(sub[0].lower(), sub.lower()):
                 replaced, word = self.removeCase(word)
-                return self.addParts(part, prefix, suffix, sub, 'repetition',
-                              Mutation('case', replaced))
+                cost = self.charCost(sub)
+                if replaced and len(replaced) == len(sub):
+                    mutations.append(Mutation('upper', replaced))
+                else:
+                    mutations.append(Mutation('case', replaced))
+                return self.addParts(
+                    part, Part(prefix), Part(suffix),
+                    Part(sub, 'repetition', mutations, cost=cost))
         return False
 
     def findKeyRun(self, part):
@@ -271,7 +332,9 @@ class Password(object):
         word = self.parts[part].word
         for prefix, suffix, sub in self.subPermutations(word, minLength=3):
             if key_graph.isRun(sub):
-                return self.addParts(part, prefix, suffix, sub, 'keyboard')
+                cost = len(part)
+                return self.addParts(part, Part(prefix), Part(suffix),
+                                     Part(sub, 'keyboard', cost))
         return False
 
     def findBorder(self, part):
@@ -285,16 +348,12 @@ class Password(object):
         word = self.parts[part].word
         # First look for borders with no suffix
         # ex. $$money$$
-        regexBorder = re.compile(
-            r"(^[^a-zA-Z0-9]{{1,{0}}}).+\1".format(len(word) // 2))
-        result = re.search(regexBorder, word)
+        result = re.search(self.regexBorder, word)
         if result:
             parts = re.split(r'({})'.format(re.escape(result.group(1))), word, 2)
         else:
             # Yow.
-            regexMirror = re.compile(
-                r"([(\[{{<])(\1{{0,{0}}}).+".format(len(word) // 2 - 1))
-            result = re.search(regexMirror, word)
+            result = re.search(self.regexMirror, word)
             if result:
                 # Get the matching character, multiply by length of match
                 right = matches[result.group(1)]
@@ -302,10 +361,12 @@ class Password(object):
                 right *= len(left)
                 parts = re.split(
                     r'({}|{})'.format(re.escape(left), re.escape(right)), word, 2)
+            else:
+                return False
         if result:
             return self.addParts(
-                part, parts[0] + parts[1],
-                parts[3] + parts[4], parts[2], None, None)
+                part, Part(parts[0] + parts[1]),
+                Part(parts[3] + parts[4]), Part(parts[2]))
         return False
 
         # Next, look for a border with suffix
@@ -315,7 +376,6 @@ def findParts(pw):
     changed = 1
     # Attempt to find border characters before anything else
     pw.findBorder(0)
-
     # Attempt to match multiple words with delimiters
 
 
@@ -328,55 +388,99 @@ def findParts(pw):
         for part in range(0, len(pw.parts)):
             if pw.parts[part].type:
                 continue
-            if pw.findKeyRun(part):
-                changed = 1
-                continue
             if pw.findDate(part):
                 changed = 1
                 continue
             if pw.findWord(part):
                 changed = 1
                 continue
+            if pw.findKeyRun(part):
+                changed = 1
+                continue
             if pw.findRepeated(part):
                 changed = 1
                 continue
 
-def compareParts(password):
-    # TODO: Compare parts against each other
-    pass
+def compareParts(pw):
+    """Find patterns involving multiple parts:
+    - Padding
+    - Prefix
+    - Repeated Suffix
+    - Combination Suffix
+    - Brute Force Suffix
+    - Dictionary Repeated
+    - Combination Dictionary(2)
+    - Combination Dictionary(2) (with Delimiter)
+    - Combination Dictionary(3)
+    - Brute Force"""
+    parts = pw.parts
+
+    # Dictionary-repeated
+#    pattern = []
+#    for i in range(0, len(parts)):
+#        if parts[i].type == "word" and not parts[i].pattern:
+#            if parts[i].word == parts[i + 1].word:
+#                parts[i].pattern = "word.repeat"
+#                parts[i + 1].pattern = "word.repeat"
+#
+#    # Dictionary-combination(2)
+#    for i in range(0, len(parts)):
+#        if parts[i].type == "word" and not parts[i].pattern:
+#            pass
+#
+#    # Dictionary-combination(3)
+#    for i in range(0, len(parts)):
+#        if parts[i].type == "word" and not parts[i].pattern:
+#            pass
+
+    # Dictionary-combination (delimiter)
+
+
+    # Dictionary-combination(3)
+
+    # Borders
+    if len(parts) > 1:
+        if parts[0].word == parts[-1].word:
+            parts[0].pattern = "border-repeat"
+            parts[-1].pattern = "border-repeat"
+        if parts[1].type == "word" and parts[0].pattern is None:
+            if parts[0].type == "date":
+                parts[0].pattern = "prefix-date"
+            elif parts[0].type == "repetition":
+                parts[0].pattern = "prefix-repeat"
+            elif parts[0].type == "keyboard":
+                parts[0].pattern = "prefix-keyboard"
 
 def main(pw):
     pw = Password(pw)
     findParts(pw)
     compareParts(pw)
+    #bruteForce(pw)
 
     # Temporary output
     result = []
 
-    patterns = []
-    if pw.parts[0] == pw.parts[-1]:
-        patterns.append("border-")
     for part in pw.parts:
         if part.type:
-            result.append("Found part '{}', type '{}', with mutations '{}'".format(
-                part.word, part.type, part.mutations))
+            result.append("<p>Found</p>\n\t<ul><li>part '{}'</li>\n\t<li>type '{}'</li>\n\t<li>mutations '{}'</li>\n\t<li>pattern '{}'</li>\n\t<li>cost '{}'</li></ul>".format(
+                part.word, part.type, part.mutations, part.pattern, part.cost))
         else:
             result.append("Found part '{}'".format(part.word))
 
-    print result
-    return '<br>'.join(result)
+    print '<br>\n'.join(result)
+    return '<br>\n'.join(result)
 
     # Causes problems for web interface - investigating
     #cleanup.cleanup()
 
 if __name__ == "__main__":
-    #pw = Password("((!11!No!5))01/49")
-    #pw = Password("08-31-2004")
-    pw = "((substrings))$$$$are2008/10/22tricky"
-    pw = "To be or not to be, that is the question"
-    pw = Password("<<notG00dP4$$word>>tim2008-08")
-    #pw = Password("wpm,.op[456curwerrrytyk")
-    #pw = Password("$$money$$")
-    #pw = Password("!!omfg!!tammy!!")
-    cProfile.run('main(pw)')
-    #main(pw)
+    #pw = "((!11!No!5))01/49"
+    #pw = "08-31-2004"
+    pw = "((-s-u-b-s-t-r-i-n-g-s))$$$$are2008/10/22tricky"
+    #pw = "To be or not to be, that is the question"
+    #pw = "<<<<notG00dP4$$word>>>>tim2008-08"
+    #pw = "wpm,.op[456curwerrrytyk"
+    #pw = "$$money$$"
+    #pw = "!!omfg!!tammy!!"
+    #cProfile.run('main(pw)')
+    main(pw)
