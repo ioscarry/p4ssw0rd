@@ -1,5 +1,6 @@
+#!/usr/local/bin/python2.7
 import copy, re, collections
-import word_list, key_graph
+import word_list, key_graph, cleanup
 import cProfile
 
 class Part(object):
@@ -48,10 +49,11 @@ class Password(object):
     regexIsDate = re.compile(r"(\d{1,4})([-/_. ])?(\d{1,2})\2?(\d{1,4})?$")
 
     def __init__(self, password):
+        # TODO: Save type of each character (lower, number, symbol) to avoid so many regex calls later
         self.password = password
         self.parts = [Part(password)]
 
-    def subPermutations(self, word, minLength=4):
+    def subPermutations(self, word, maxLength=20, minLength=4):
         """Generates all possible substrings, from longest to shortest.
         minLength of 2:
         words   [:]
@@ -250,6 +252,7 @@ class Password(object):
     def findRepeated(self, part):
         """Finds repeated characters."""
         word = self.parts[part].word
+        # TODO: Replace this (performance)
         if len(collections.Counter(word)) > len(word) - 1:
             return False
 
@@ -303,17 +306,25 @@ class Password(object):
             return self.addParts(
                 part, parts[0] + parts[1],
                 parts[3] + parts[4], parts[2], None, None)
-        print "false!"
         return False
 
         # Next, look for a border with suffix
         # ex. $$money$$2008
 
-def main(pw):
-    # Strictly for testing
+def main(password):
+    pw = Password(password)
+
     changed = 1
     # Attempt to find border characters before anything else
     pw.findBorder(0)
+
+    # Attempt to match multiple words with delimiters
+
+
+    # Brute-force all-digit passwords which don't match dates
+    if not re.search("[^0-9]", password):
+        pass
+
     while changed:
         changed = 0
         for part in range(0, len(pw.parts)):
@@ -332,18 +343,28 @@ def main(pw):
                 changed = 1
                 continue
 
+    result = []
     # TODO: Compare parts against each other
+    patterns = []
+    if pw.parts[0] == pw.parts[-1]:
+        patterns.append("border-")
     for part in pw.parts:
         if part.type:
-            print "Found part '{}', type '{}', with mutations '{}'".format(
-                part.word, part.type, part.mutations)
+            result.append("Found part '{}', type '{}', with mutations '{}'".format(
+                part.word, part.type, part.mutations))
         else:
-            print "Found part '{}'".format(part.word)
+            result.append("Found part '{}'".format(part.word))
+
+    print result
+    return '<br>'.join(result)
+
+    #cleanup.cleanup()
 
 if __name__ == "__main__":
     #pw = Password("((!11!No!5))01/49")
     #pw = Password("08-31-2004")
-    pw = Password("((substrings))$$$$are2008/10/22tricky")
+    pw = "((substrings))$$$$are2008/10/22tricky"
+    pw = "To be or not to be, that is the question"
     #pw = Password("<<notG00dP4$$word>>tim2008-08")
     #pw = Password("wpm,.op[456curwerrrytyk")
     #pw = Password("$$money$$")
