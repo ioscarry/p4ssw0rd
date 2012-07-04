@@ -47,7 +47,7 @@ def isRun(word):
         createLayouts()
     for layout in layouts:
         for char, next in zip(word, word[1:]):
-            if not layout.keys[char].hasNeighbor(next):
+            if char == " " or not layout.keys[char].hasNeighbor(next):
                 return False
     return True
 
