@@ -1,7 +1,10 @@
+"""General-purpose binary search for in sorted files, with custom low and high
+locations (for first-character indexed files)."""
+
 import os
 import cProfile
 
-def searchFile(f, search, low=None, high=None):
+def searchFile(f, search, low=None, high=None, splitChar=None):
     """Does a binary search on a file object of unknown length. Returns a float
     of the position in the file if found, False if not."""
     f.seek(0, os.SEEK_END)
@@ -15,12 +18,15 @@ def searchFile(f, search, low=None, high=None):
     f.seek(low)
     found = f.readline()
     i = 0
+    line = 0
     while found != search:
         temp = found
         mid = (high + low) // 2
         f.seek(mid)
         f.readline()                    # Move to the next full line
-        found = f.readline().rstrip("\n").rstrip("\r")
+        found = f.readline().rstrip("\n\r")
+        if splitChar and "\t" in found:
+            (found, line) = found.split(splitChar)
         if found == temp:
             break
         if found > search:
@@ -33,7 +39,7 @@ def searchFile(f, search, low=None, high=None):
                 "infinite loop during binary search for {}".format(search))
 
     if found == search:
-        return (mid * 1.0) / size
+        return int(line)
     else:
         return False
 
