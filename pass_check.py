@@ -311,9 +311,7 @@ class Password(object):
         # Next, look for a border with suffix
         # ex. $$money$$2008
 
-def main(password):
-    pw = Password(password)
-
+def findParts(pw):
     changed = 1
     # Attempt to find border characters before anything else
     pw.findBorder(0)
@@ -322,7 +320,7 @@ def main(password):
 
 
     # Brute-force all-digit passwords which don't match dates
-    if not re.search("[^0-9]", password):
+    if not re.search(r"[^0-9]", pw.parts[0].word):
         pass
 
     while changed:
@@ -343,8 +341,18 @@ def main(password):
                 changed = 1
                 continue
 
-    result = []
+def compareParts(password):
     # TODO: Compare parts against each other
+    pass
+
+def main(pw):
+    pw = Password(pw)
+    findParts(pw)
+    compareParts(pw)
+
+    # Temporary output
+    result = []
+
     patterns = []
     if pw.parts[0] == pw.parts[-1]:
         patterns.append("border-")
@@ -358,6 +366,7 @@ def main(password):
     print result
     return '<br>'.join(result)
 
+    # Causes problems for web interface - investigating
     #cleanup.cleanup()
 
 if __name__ == "__main__":
@@ -365,7 +374,7 @@ if __name__ == "__main__":
     #pw = Password("08-31-2004")
     pw = "((substrings))$$$$are2008/10/22tricky"
     pw = "To be or not to be, that is the question"
-    #pw = Password("<<notG00dP4$$word>>tim2008-08")
+    pw = Password("<<notG00dP4$$word>>tim2008-08")
     #pw = Password("wpm,.op[456curwerrrytyk")
     #pw = Password("$$money$$")
     #pw = Password("!!omfg!!tammy!!")

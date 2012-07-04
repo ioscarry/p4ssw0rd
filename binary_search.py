@@ -16,9 +16,8 @@ def searchFile(f, search, low=None, high=None, splitChar=None):
     mid = (high + low) // 2
     # Workaround to stop the first word from being missed
     f.seek(low)
-    found = f.readline()
+    found, line = f.readline().rstrip("\n\r").split(splitChar)
     i = 0
-    line = 0
     while found != search:
         temp = found
         mid = (high + low) // 2
@@ -40,8 +39,7 @@ def searchFile(f, search, low=None, high=None, splitChar=None):
 
     if found == search:
         return int(line)
-    else:
-        return False
+    return False
 
 if __name__ == "__main__":
     f = open(os.path.join("words", "cities.dic"), "r")

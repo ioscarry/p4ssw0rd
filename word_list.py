@@ -266,7 +266,7 @@ def findWord(word):
         fn["handle"],
         word,
         fn["letterIndex"][first][0],
-        fn["letterIndex"][first][0],
+        fn["letterIndex"][first][1],
         splitChar="\t")
     if location:
         #print "Word {} found after {} searches".format(word, location)
