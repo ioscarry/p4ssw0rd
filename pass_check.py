@@ -15,6 +15,7 @@ parenMatch = {
 }
 
 def findParts(pw):
+    # TODO: Loop through tree instead of parts
     changed = 1
     # Attempt to find border characters before anything else
     pw.findBorder(0)

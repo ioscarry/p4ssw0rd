@@ -63,6 +63,11 @@ class Mutation(object):
 
     cost = property(_getCost)
 
+class Node(object):
+    pass
+
+class Tree(object):
+    pass
 
 class Password(object):
     SYMBOLS = tuple('`~!@#$%^&*()-_=+[{]}\\|;:\'",<.>/?')
@@ -92,6 +97,7 @@ class Password(object):
         # TODO: Save type of each character (lower, number, symbol) to avoid so many regex calls later
         self.password = password
         self.parts = [Part(password)]
+        self.partsTree = Tree()
 
     def subPermutations(self, word, maxLength=20, minLength=4):
         """Generates all possible substrings, from longest to shortest."""
@@ -185,7 +191,6 @@ class Password(object):
         dictionary word (larger than two characters) within the given part
         index."""
 
-        # TODO: Performance: find a way to reduce the number of searches
         word = self.parts[part].word
         for prefix, suffix, sub in self.subPermutations(word, minLength=3):
             mutations = []
@@ -254,6 +259,7 @@ class Password(object):
         return False, False
 
     def addParts(self, part, prefix, suffix, sub):
+        # TODO: Add parts to a tree, instead of a flat array
         if sub and sub.word:
             self.parts[part] = sub
         else:
