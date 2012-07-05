@@ -40,6 +40,13 @@ class TestFind(unittest.TestCase):
         self.assertEqual(pw.parts[0].mutations[1].type, "leet")
         self.assertEqual(pw.parts[0].mutations[1].index, [1, 3, 6])
 
+    def testFindDatePart(self):
+        pw = pass_check.Password("102399842")
+        self.assertEqual(pw.findDate(), True)
+        self.assertEqual(pw.parts[0].word, "102399")
+        self.assertEqual(pw.parts[0].type, "date-common-YMD")
+        self.assertEqual(pw.parts[0].mutations, [])
+
     def testFindDateYMD(self):
         pw = pass_check.Password("2009/04/21")
         self.assertEqual(pw.findDate(), True)
@@ -67,6 +74,10 @@ class TestFind(unittest.TestCase):
         self.assertEqual(pw.parts[0].word, "1949")
         self.assertEqual(pw.parts[0].type, "date-common-Y")
         self.assertEqual(pw.parts[0].mutations, [])
+
+    def testFindDateFail(self):
+        pw = pass_check.Password("9235590291")
+        self.assertEqual(pw.findDate(), False)
 
     def testFindBorderSimple(self):
         pw = pass_check.Password("!!,,,,,,,,!!")
@@ -136,6 +147,32 @@ class TestRemove(unittest.TestCase):
         pw = pass_check.Password("f_a_il")
         self.assertEqual(pw.removeDelimiter(
             pw.parts[0].word), ([], "f_a_il"))
+
+    def testBruteForce(self):
+        pw = pass_check.Password("owirudyas")
+        pw.findBruteForce(0)
+        self.assertEqual(pw.parts[0].word, "owirudyas")
+        self.assertEqual(pw.parts[0].type, "bruteforce")
+        self.assertEqual(pw.parts[0].cost, 26 ** 9)
+
+        pw = pass_check.Password("94532")
+        pw.findBruteForce(0)
+        self.assertEqual(pw.parts[0].word, "94532")
+        self.assertEqual(pw.parts[0].type, "bruteforce")
+        self.assertEqual(pw.parts[0].cost, 10 ** 5)
+
+        pw = pass_check.Password("94$532")
+        pw.findBruteForce(0)
+        self.assertEqual(pw.parts[0].word, "94$532")
+        self.assertEqual(pw.parts[0].type, "bruteforce")
+        self.assertEqual(pw.parts[0].cost, 72 ** 6)
+
+        pw = pass_check.Password("CEPQOSWA")
+        pw.findBruteForce(0)
+        self.assertEqual(pw.parts[0].word, "CEPQOSWA")
+        self.assertEqual(pw.parts[0].type, "bruteforce")
+        self.assertEqual(pw.parts[0].cost, 26 ** 8)
+
 
 class TestOther(unittest.TestCase):
     def testSubPermutations(self):
