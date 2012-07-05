@@ -187,7 +187,7 @@ class Password(object):
 
         # TODO: Performance: find a way to reduce the number of searches
         word = self.parts[part].word
-        for prefix, suffix, sub in self.subPermutations(word, minLength=2):
+        for prefix, suffix, sub in self.subPermutations(word, minLength=3):
             mutations = []
             replaced, sub = self.removeDelimiter(sub)
             if replaced:

@@ -192,5 +192,6 @@ if __name__ == "__main__":
     #pw = "wpm,.op[456curwerrrytyk"
     #pw = "$$money$$"
     #pw = "!!andtammytammy!!"
+    pw = "--word&second--"
     #cProfile.run('main(pw)')
     main(pw)

@@ -44,35 +44,35 @@ class TestFind(unittest.TestCase):
         pw = pass_check.Password("102399842")
         self.assertEqual(pw.findDate(), True)
         self.assertEqual(pw.parts[0].word, "102399")
-        self.assertEqual(pw.parts[0].type, "date-common-YMD")
+        self.assertEqual(pw.parts[0].type, "date")
         self.assertEqual(pw.parts[0].mutations, [])
 
     def testFindDateYMD(self):
         pw = pass_check.Password("2009/04/21")
         self.assertEqual(pw.findDate(), True)
         self.assertEqual(pw.parts[0].word, "2009/04/21")
-        self.assertEqual(pw.parts[0].type, "date-common-YMD")
+        self.assertEqual(pw.parts[0].type, "date")
         self.assertEqual(pw.parts[0].mutations, [])
 
     def testFindDateYM(self):
         pw = pass_check.Password("200809")
         self.assertEqual(pw.findDate(), True)
         self.assertEqual(pw.parts[0].word, "200809")
-        self.assertEqual(pw.parts[0].type, "date-common-YM")
+        self.assertEqual(pw.parts[0].type, "date")
         self.assertEqual(pw.parts[0].mutations, [])
 
     def testFindDateMD(self):
         pw = pass_check.Password("01.20")
         self.assertEqual(pw.findDate(), True)
         self.assertEqual(pw.parts[0].word, "01.20")
-        self.assertEqual(pw.parts[0].type, "date-common-MD")
+        self.assertEqual(pw.parts[0].type, "date")
         self.assertEqual(pw.parts[0].mutations, [])
 
     def testFindDateY(self):
         pw = pass_check.Password("1949")
         self.assertEqual(pw.findDate(), True)
         self.assertEqual(pw.parts[0].word, "1949")
-        self.assertEqual(pw.parts[0].type, "date-common-Y")
+        self.assertEqual(pw.parts[0].type, "date")
         self.assertEqual(pw.parts[0].mutations, [])
 
     def testFindDateFail(self):
