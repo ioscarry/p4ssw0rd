@@ -12,20 +12,20 @@ class Part(object):
         self.type = type
         self.mutations = mutations
         self.pattern = pattern
-        self._cost = cost
+        self.cost = cost
 
     def __repr__(self):
         return "word: {}, type: {}, mutations: {}".format(
             self.word, self.type, self.mutations, self.pattern
         )
 
-    def _getCost(self):
+    def _getFinalCost(self):
         multi = 1
         for mutation in self.mutations:
             multi *= mutation.cost
-        return self._cost * multi
+        return self.cost * multi
 
-    cost = property(_getCost)
+    finalCost = property(_getFinalCost)
 
 class Mutation(object):
     typeCost = {
@@ -33,7 +33,7 @@ class Mutation(object):
         "leet": 64,
         "charSwap": 49,
         "charRemove": 49,
-        "charDupe": 49
+        "charDupe": 49,
     }
 
     def __init__(self, type, index):
@@ -44,24 +44,23 @@ class Mutation(object):
         return "{}: {}".format(self.type, self.index)
 
     def _getCost(self):
-        if type == "case":
+        if self.type == "case":
             if self.index == "[0]":
                 return 2
             else:
                 return len(self.index)
-        if type == "upper":
+        if self.type == "upper":
             return 3
-        if type == "leet":
+        if self.type == "leet":
             return 64
-        if type == "delimiter":
+        if self.type == "delimiter":
             return 20
-        if type in ("charSwap", "charDupe", "charRemove"):
+        if self.type in ("charSwap", "charDupe", "charRemove"):
             if len(self.index) == 1:
                 return self.index[0]
             else:
                 return len(self.index) * 8
         return 1
-
 
     cost = property(_getCost)
 
@@ -194,10 +193,11 @@ class Password(object):
             replaced, sub = self.removeDelimiter(sub)
             if replaced:
                 mutations.append(Mutation('delimiter', replaced))
+
             replaced, sub = self.removeCase(sub)
             if replaced and len(replaced) == len(sub):
                 mutations.append((Mutation('upper', replaced)))
-            else:
+            elif replaced:
                 mutations.append((Mutation('case', replaced)))
 
             for replaced, subUnLeet in self.removeLeet(sub):
@@ -232,36 +232,36 @@ class Password(object):
         if not place2 and not place3:
             # Y only
             if self.isYear(place1):
-                return 'date-common-Y'
+                return 'date-common-Y', 75
         elif not place3:
             # MD or YM
             if (1 <= place1 <= 12 and 1 <= place2 <= 31) or (
                 1 <= place2 <= 12 and 1 <= place1 <= 31):
-                return 'date-common-MD'
+                return 'date-common-MD', 372+75
             elif (1 <= place1 <= 12 and self.isYear(place2)) or (
                 1 <= place2 <= 12 and self.isYear(place1)):
-                return 'date-common-YM'
+                return 'date-common-YM', 900+372+75
         else:
             # YMD
             if self.isYear(place1):
                 if (1 <= place2 <= 12 and 1 <= place3 <= 31) or (
                     1 <= place3 <= 12 and 1 <= place2 <= 31):
-                    return 'date-common-YMD'
+                    return 'date-common-YMD', 164250+900+372+75
             # Have to check both for dates such as 01/04/01
             if self.isYear(place1):
                 if (1 <= place1 <= 12 and 1 <= place2 <= 31) or (
                     1 <= place2 <= 12 and 1 <= place1 <= 31):
-                    return 'date-common-YMD'
-        return False
+                    return 'date-common-YMD', 164250+900+372+75
+        return False, False
 
     def addParts(self, part, prefix, suffix, sub):
-        if sub.word:
+        if sub and sub.word:
             self.parts[part] = sub
         else:
             del(self.parts[part])
-        if suffix.word:
+        if suffix and suffix.word:
             self.parts.insert(part + 1, suffix)
-        if prefix.word:
+        if prefix and prefix.word:
             self.parts.insert(part, prefix)
         return True
 
@@ -281,11 +281,12 @@ class Password(object):
                     result.group(3),
                     result.group(4))
                 places = [int(x) if x is not None else None for x in places]
-                type = self.isDate(places[0], places[1], places[2])
+                (type, cost) = self.isDate(places[0], places[1], places[2])
                 if not type:
                     return False
                 return self.addParts(
-                    part, Part(prefix), Part(suffix), Part(sub, type))
+                    part, Part(prefix), Part(suffix),
+                    Part(sub, type, cost=cost))
         return False
 
     def isRepeated(self, first, word):
@@ -319,7 +320,7 @@ class Password(object):
                 cost = self.charCost(sub)
                 if replaced and len(replaced) == len(sub):
                     mutations.append(Mutation('upper', replaced))
-                else:
+                elif replaced:
                     mutations.append(Mutation('case', replaced))
                 return self.addParts(
                     part, Part(prefix), Part(suffix),
@@ -372,6 +373,25 @@ class Password(object):
         # Next, look for a border with suffix
         # ex. $$money$$2008
 
+    def findBruteForce(self, part):
+        """Find brute force time after all other patterns are exhausted."""
+        word = self.parts[part].word
+        if re.search("[^0-9a-zA-Z._!-@*#/$&]", word):
+            charset = 94
+        elif re.search("[^0-9a-zA-Z]", word):
+            charset = 72
+        elif re.search("^[A-Z]+$", word):
+            charset = 26
+        elif re.search("^[a-z]+$", word):
+            charset = 26
+        elif re.search("^[0-9]+$", word):
+            charset = 10
+        else:
+            charset = 52
+        return self.addParts(
+            part, None, None, Part(word, 'bruteforce', [], charset ** len(word)))
+
+
 def findParts(pw):
     changed = 1
     # Attempt to find border characters before anything else
@@ -400,6 +420,9 @@ def findParts(pw):
             if pw.findRepeated(part):
                 changed = 1
                 continue
+    for part in range(0, len(pw.parts)):
+        if not pw.parts[part].type:
+            pw.findBruteForce(part)
 
 def compareParts(pw):
     """Find patterns involving multiple parts:
@@ -451,21 +474,44 @@ def compareParts(pw):
             elif parts[0].type == "keyboard":
                 parts[0].pattern = "prefix-keyboard"
 
+def timeToString(seconds):
+    if not seconds:
+        return "milliseconds"
+    if seconds >= 3155692600:
+        return "centuries"
+    if seconds >= 315569260:
+        return "{} decades".format(seconds // 315569260)
+    if seconds >= 31556926:
+        return "{} years".format(seconds // 31556926)
+    if seconds >= 2629743:
+        return "{} months".format(seconds // 2629743)
+    if seconds >= 604800:
+        return "{} weeks".format(seconds // 604800)
+    if seconds >= 86400:
+        return "{} days".format(seconds // 86400)
+    if seconds >= 3600:
+        return "{} hours".format(seconds // 3600)
+    if seconds >= 60:
+        return "{} minutes".format(seconds // 60)
+    return "{} seconds".format(seconds)
+
 def main(pw):
     pw = Password(pw)
     findParts(pw)
     compareParts(pw)
-    #bruteForce(pw)
 
     # Temporary output
     result = []
-
+    totalCost = 1
     for part in pw.parts:
         if part.type:
-            result.append("<p>Found</p>\n\t<ul><li>part '{}'</li>\n\t<li>type '{}'</li>\n\t<li>mutations '{}'</li>\n\t<li>pattern '{}'</li>\n\t<li>cost '{}'</li></ul>".format(
-                part.word, part.type, part.mutations, part.pattern, part.cost))
+            result.append("<p>Found</p>\n\t<ul><li>part '{}'</li>\n\t<li>type '{}'</li>\n\t<li>mutations '{}'</li>\n\t<li>pattern '{}'</li>\n\t<li>base cost '{}'</li>\n\t<li>total cost '{}'</li></ul>".format(
+                part.word, part.type, part.mutations, part.pattern, part.cost, part.finalCost))
+            totalCost *= part.finalCost
         else:
             result.append("Found part '{}'".format(part.word))
+
+    result.insert(0, "<p>Offline crack time at 1 billion guesses per second: {}</p>".format(timeToString(totalCost // 1000000000)))
 
     print '<br>\n'.join(result)
     return '<br>\n'.join(result)
@@ -474,9 +520,10 @@ def main(pw):
     #cleanup.cleanup()
 
 if __name__ == "__main__":
+    pw = "1731325"
     #pw = "((!11!No!5))01/49"
     #pw = "08-31-2004"
-    pw = "((-s-u-b-s-t-r-i-n-g-s))$$$$are2008/10/22tricky"
+    #pw = "((-s-u-b-s-t-r-i-n-g-s))$$$$are2008/10/22tricky!@%@"
     #pw = "To be or not to be, that is the question"
     #pw = "<<<<notG00dP4$$word>>>>tim2008-08"
     #pw = "wpm,.op[456curwerrrytyk"
