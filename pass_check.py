@@ -1,7 +1,8 @@
 #!/usr/local/bin/python2.7
-import re
-import cProfile
+import re, copy
+import cProfile, pstats
 from password import Password
+from time_to_string import timeToString
 
 parenMatch = {
     "(": ")",
@@ -11,39 +12,25 @@ parenMatch = {
     ")": "(",
     "]": "[",
     "}": "{",
-    ">": "<",
-}
+    ">": "<"}
 
 def findParts(pw):
-    # TODO: Loop through tree instead of parts
-    changed = 1
-    # Attempt to find border characters before anything else
-    pw.findBorder(0)
-
-    # Brute-force all-digit passwords which don't match dates
-    if not re.search(r"[^0-9]", pw.parts[0].word):
-        pass
-
-    while changed:
-        changed = 0
-        for part in range(0, len(pw.parts)):
-            if pw.parts[part].type:
-                continue
-            if pw.findDate(part):
-                changed = 1
-                continue
-            if pw.findWord(part):
-                changed = 1
-                continue
-            if pw.findKeyRun(part):
-                changed = 1
-                continue
-            if pw.findRepeated(part):
-                changed = 1
-                continue
-    for part in range(0, len(pw.parts)):
-        if not pw.parts[part].type:
+    """Searches for all possible patterns in the given Password object. Returns
+     True if any match is found, False if not."""
+    for part in pw.getParts():
+        #print "{} | {} | {}".format(part, part.prev, part.next)
+        if part.type:
+            continue
+        if not pw.checkMemo(part):
+            pw.findDate(part)
+            pw.findWord(part)
+            pw.findKeyRun(part)
+            pw.findRepeated(part)
             pw.findBruteForce(part)
+    if pw.queue:
+        pw.addParts()
+        return True
+    return False
 
 def reverseParen(word):
     word = list(word)
@@ -52,21 +39,8 @@ def reverseParen(word):
             word[i] = parenMatch[word[i]]
     return ''.join(word)
 
-def compareParts(pw):
-    """Find patterns involving multiple parts:
-    - Border
-    - Prefix
-    - Repeated Suffix
-    - Combination Suffix
-    - Brute Force Suffix
-    - Dictionary Repeated
-    - Combination Dictionary(2)
-    - Combination Dictionary(2) (with Delimiter)
-    - Combination Dictionary(3)
-    - Brute Force"""
-    parts = pw.parts
-
-    typeMap = ''.join([part.type[0] for part in pw.parts])
+def compareParts(parts, sim = False):
+    typeMap = ''.join([part.type[0] for part in parts])
 
     # Dictionary-repeated
     # pattern = word-repeat
@@ -103,6 +77,9 @@ def compareParts(pw):
 
     # Borders
     # pattern = border-repeat
+    for part in parts:
+        print part, part.pattern
+
     result = re.finditer(r"([brd]).+\1", typeMap)
     for match in result:
         start = match.start()
@@ -130,44 +107,28 @@ def compareParts(pw):
         else:
             part.pattern = 'suffix'
 
-    # pattern = prefix
-    # pattern = prefix-combination
-    # pattern = suffix
-    # pattern = suffix-combination
-
-def timeToString(seconds):
-    if not seconds:
-        return "milliseconds"
-    if seconds >= 3155692600:
-        return "centuries"
-    if seconds >= 315569260:
-        return "{} decades".format(seconds // 315569260)
-    if seconds >= 31556926:
-        return "{} years".format(seconds // 31556926)
-    if seconds >= 2629743:
-        return "{} months".format(seconds // 2629743)
-    if seconds >= 604800:
-        return "{} weeks".format(seconds // 604800)
-    if seconds >= 86400:
-        return "{} days".format(seconds // 86400)
-    if seconds >= 3600:
-        return "{} hours".format(seconds // 3600)
-    if seconds >= 60:
-        return "{} minutes".format(seconds // 60)
-    return "{} seconds".format(seconds)
+    cost = 1
+    for part in parts:
+        cost *= part.finalCost
+    return cost
 
 def main(pw):
     pw = Password(pw)
-    findParts(pw)
-    compareParts(pw)
+    while findParts(pw):
+        pass
+    lowestCost = float('inf')
+    for parts in pw.getParts(combination = True):
+#        for part in parts:
+#            print part
+#        print
+        cost = compareParts(parts)
+        if cost < lowestCost:
+            lowestCost = cost
+            finalParts = parts
 
-    # Temporary output
     result = []
     totalCost = 1
-    for part in pw.parts:
-        print part.pattern, "-",
-    print
-    for part in pw.parts:
+    for part in finalParts:
         if part.type:
             result.append("<p>Found</p>\n\t<ul><li>part '{}'</li>\n\t<li>type '{}'</li>\n\t<li>mutations '{}'</li>\n\t<li>pattern '{}'</li>\n\t<li>base cost '{}'</li>\n\t<li>total cost '{}'</li></ul>".format(
                 part.word, part.type, part.mutations, part.pattern, part.cost, part.finalCost))
@@ -180,19 +141,22 @@ def main(pw):
     print '<br>\n'.join(result)
     return '<br>\n'.join(result)
 
-    # Causes problems for web interface - investigating
-    #cleanup.cleanup()
-
 if __name__ == "__main__":
-    #pw = "checkcorrecthorse"
-    #pw = "((!11!No!5))01/49"
+    #pw = "correcthorsebatterystaple"
+    pw = "((!11!No!5))01/49"
     #pw = "08-31-2004"
-    #pw = "((-s-u-b-s-t-r-i-n-g-s))$$$$are2008/10/22tricky!@%@"
-    pw = "To be or not to be, that is the question"
+    #pw = "dog$hose"
+    #pw = "To be or not to be, that is the question"
     #pw = "<<<<notG00dP4$$word>>>>tim2008-08"
-    #pw = "wpm,.op[456curwerrrytyk"
+    #pw = "wpm,.op[456curkky"
     #pw = "$$money$$"
     #pw = "!!andtammytammy!!"
-    pw = "--word&second--"
-    #cProfile.run('main(pw)')
+    #pw = "--word&second--"
+    #pw = "$$money"
+    #pw = "B3taM4le"
+    pw = "$$thing$$"
+#    cProfile.run('main(pw)', 'p4ssw0rd_correcthorsebattery')
+#    p = pstats.Stats('p4ssw0rd_correcthorsebattery')
+#    p.sort_stats('cum')
+#    p.print_stats()
     main(pw)
