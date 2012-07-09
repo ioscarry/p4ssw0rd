@@ -10,6 +10,7 @@ import os, re, mmap, string
 import binary_search
 import cProfile
 
+searchMemo = {}
 regexNotLowercase = re.compile("[^a-z]")
 regexNotLowercaseApostrophe = re.compile("[^a-z']")
 
@@ -145,8 +146,6 @@ def convertFiles():
             count = int(count)
             if base in lines and lines[base] < count:
                 continue
-#                lines[base] = count
-#                lines[line] = line
             else:
                 lines[base] = count
         f.close()
@@ -176,20 +175,6 @@ def indexFiles():
         stack = []
         lastPos = 0
 
-#        for letter in sorted(string.printable):
-#            start = None
-#
-#            # Get around Python file iteration not playing well with .tell()
-#            while True:
-#                pos = contents.tell()
-#                line = contents.readline()
-#                if not line:
-#                    break
-#                if line[0] == letter:
-#                    start = pos
-#                    break
-#            contents.seek(0)
-
         letterIndex = {}
         for letter in sorted(string.printable):
             result = re.search(r"^{}".format(re.escape(letter)), contents, re.M)
@@ -200,9 +185,6 @@ def indexFiles():
                 letterIndex[letter] = [start,]
                 stack.append(letterIndex[letter])
                 lastPos = start
-            #else:
-                #letterIndex[letter] = None
-                #stack.append(letterIndex[letter])
         while len(stack) > 0:
             element = stack.pop()
             if element[0]:
@@ -210,33 +192,9 @@ def indexFiles():
             else:
                 element.append(0)
 
-        # Max length (no longer needed)
-#        for line in iter(contents.readline, ""):
-#            line = line.rstrip("\r\n")
-#            if len(line.rstrip()) > maxLength:
-#                maxLength = len(line)
-
-        # Character set (no longer needed)
-#        type = getType(contents)
-
-        # Line count (no longer needed)
-#        lines = 0
-#        contents.seek(0)
-#        while contents.readline():
-#            lines += 1
-
         letterIndex = {k: tuple(v) for k, v in letterIndex.items()}
         print '{}:{{"name":"{}", "handle":None, "letterIndex":{}}},'.format(
             fn.split(".")[0], fn, letterIndex)
-
-#def getType(item):
-#    if re.search(r"[^a-zA-Z0-9'\n\r]", item):
-#        return 3
-#    if re.search(r"[^a-z'\n\r]", item):
-#        return 2
-#    elif not re.search(r"[^0-9\n\r]", item):
-#        return 1
-#    return 0
 
 def openFiles():
     for fn in wordFiles.values():
@@ -247,30 +205,29 @@ def closeFiles():
         fn["handle"].close()
 
 def findWord(word):
+    global searchMemo
     # Open files if necessary
+    if word in searchMemo:
+        return searchMemo[word]
     if len(word) not in wordFiles:
         return False
     if wordFiles[1]["handle"] is None:
         openFiles()
     fn = wordFiles[len(word)]
 
-    # Get the ASCII letter or character after the first
     first = word[0]
     if first not in fn["letterIndex"]:
         return False
     length = len(word)
-    # Cheap(er) ways of skipping file searches
-    # TODO: Index character set of file instead of using basic type
 
-    #print "Searching file: {} for term: {}".format(fn["name"], word)
     location = binary_search.searchFile(
         fn["handle"],
         word,
         fn["letterIndex"][first][0],
         fn["letterIndex"][first][1],
         splitChar="\t")
+    searchMemo[word] = location
     if location:
-        #print "Word {} found after {} searches".format(word, location)
         return location
     return False
 
