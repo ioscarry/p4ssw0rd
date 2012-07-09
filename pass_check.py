@@ -1,137 +1,158 @@
 #!/usr/local/bin/python2.7
-import re, copy
+import re, itertools
 import cProfile, pstats
 from password import Password
 from time_to_string import timeToString
 
-parenMatch = {
-    "(": ")",
-    "[": "]",
-    "{": "}",
-    "<": ">",
-    ")": "(",
-    "]": "[",
-    "}": "{",
-    ">": "<"}
+class PassCheck(object):
+    parenMatch = {
+        "(": ")",
+        "[": "]",
+        "{": "}",
+        "<": ">",
+        ")": "(",
+        "]": "[",
+        "}": "{",
+        ">": "<"}
+    regexPatternDictRepeat = None
+    regexPatternDictCombination = None
+    regexPatternDictDelimiter = None
+    regexPatternBorder = None
 
-def findParts(pw):
-    """Searches for all possible patterns in the given Password object. Returns
-     True if any match is found, False if not."""
-    for part in pw.getParts():
-        #print "{} | {} | {}".format(part, part.prev, part.next)
-        if part.type:
-            continue
-        if not pw.checkMemo(part):
-            pw.findDate(part)
-            pw.findWord(part)
-            pw.findKeyRun(part)
-            pw.findRepeated(part)
-            pw.findBruteForce(part)
-    if pw.queue:
-        pw.addParts()
-        return True
-    return False
+    def __init__(self, password):
+        self.password = Password(password)
 
-def reverseParen(word):
-    word = list(word)
-    for i in range(0, len(word)):
-        if word[i] in parenMatch:
-            word[i] = parenMatch[word[i]]
-    return ''.join(word)
+    def findParts(self):
+        """Searches for all possible patterns in the given Password object. Returns
+         True if any match is found, False if not."""
+        for part in self.password.getParts():
+            #print "{} | {} | {}".format(part, part.prev, part.next)
+            if part.type:
+                continue
+            if not self.password.checkMemo(part):
+                self.password.findDate(part)
+                self.password.findWord(part)
+                self.password.findKeyRun(part)
+                self.password.findRepeated(part)
+                self.password.findBruteForce(part)
+        if self.password.queue:
+            self.password.addParts()
+            return True
+        return False
 
-def compareParts(parts, sim = False):
-    typeMap = ''.join([part.type[0] for part in parts])
+    def reverseParen(self, word):
+        word = list(word)
+        for i in range(0, len(word)):
+            if word[i] in self.parenMatch:
+                word[i] = self.parenMatch[word[i]]
+        return ''.join(word)
 
-    # Dictionary-repeated
-    # pattern = word-repeat
-    result = re.finditer("(?=(ww))", typeMap)
-    for match in result:
-        start = match.start()
-        if parts[start].word == parts[start + 1].word:
-            if not parts[start].pattern:
-                parts[start].pattern = "word-repeat"
-            if not parts[start + 1].pattern:
-                parts[start + 1].pattern = "word-repeat"
+    regexPatternDictRepeat = None
 
-    # Dictionary-combination(2)
-    # pattern = word-combination
-    result = re.finditer("(?=(ww))", typeMap)
-    for match in result:
-        start = match.start()
-        if not parts[start].pattern:
-            parts[start].pattern = "word-combination"
-        if not parts[start + 1].pattern:
-            parts[start + 1].pattern = "word-combination"
+    def findLowestCost(self):
+        lowestCost = float('inf')
+        finalParts = []
+        for parts in self.password.getParts(combination = True):
+            cost = self.compareParts(parts)
+            if cost < lowestCost:
+                lowestCost = cost
+                finalParts = parts
+        return finalParts
 
-    # Dictionary-combination (delimiter)
-    # pattern = word-combination-delimiter
-    result = re.finditer("(?=(w[rdb]w))", typeMap)
-    for match in result:
-        start = match.start()
-        if not parts[start].pattern:
-            parts[start].pattern = "word-combination"
-        if not parts[start + 1].pattern:
-            parts[start + 1].pattern = "word-combination-delimiter"
-        if not parts[start + 2].pattern:
-            parts[start + 2].pattern = "word-combination"
+    def compareParts(self, parts):
+        typeMap = ''.join([part.type[0] for part in parts])
 
-    # Borders
-    # pattern = border-repeat
-    for part in parts:
-        print part, part.pattern
+        # Parts are shared between combinations - can't modify them!
+        patterns = [None] * len(parts)
 
-    result = re.finditer(r"([brd]).+\1", typeMap)
-    for match in result:
-        start = match.start()
-        for end in parts[start:]:
-            if parts[start].word == end.word:
-                if not parts[start].pattern:
-                    parts[start].pattern = "border-repeat"
-                if not end.pattern:
-                    end.pattern = "border-repeat"
-            elif parts[start].word == end.word[::-1] or \
-                 parts[start].word == reverseParen(end.word):
-                if not parts[start].pattern:
-                    parts[start].pattern = "border-mirror"
-                if not end.pattern:
-                    end.pattern = "border-mirror"
+        # Dictionary-repeated
+        # pattern = word-repeat
+        if not self.regexPatternDictRepeat:
+            self.regexPatternDictRepeat = re.compile(r"(?=(ww))")
+        result = re.finditer(self.regexPatternDictRepeat, typeMap)
+        for match in result:
+            start = match.start()
+            if parts[start].word == parts[start + 1].word:
+                if not patterns[start]:
+                    patterns[start] = "word-repeat"
+                if patterns[start + 1]:
+                    patterns[start + 1] = "word-repeat"
 
-    for part in parts:
-        if part.pattern:
-            break
-        else:
-            part.pattern = 'prefix'
-    for part in parts[::-1]:
-        if part.pattern:
-            break
-        else:
-            part.pattern = 'suffix'
+        # Dictionary-combination(2)
+        # pattern = word-combination
+        if not self.regexPatternDictCombination:
+            self.regexPatternDictCombination = re.compile(r"(?=(ww))")
+        result = re.finditer(self.regexPatternDictCombination, typeMap)
+        for match in result:
+            start = match.start()
+            if not patterns[start]:
+                patterns[start] = "word-combination"
+            if not patterns[start + 1]:
+                patterns[start + 1] = "word-combination"
 
-    cost = 1
-    for part in parts:
-        cost *= part.finalCost
-    return cost
+        # Dictionary-combination (delimiter)
+        # pattern = word-combination-delimiter
+
+        if not self.regexPatternDictDelimiter:
+            self.regexPatternDictDelimiter = re.compile(r"(?=(w[rdb]w))")
+        result = re.finditer(self.regexPatternDictDelimiter, typeMap)
+        for match in result:
+            start = match.start()
+            if not patterns[start]:
+                patterns[start] = "word-combination"
+            if not patterns[start + 1]:
+                patterns[start + 1] = "word-combination-delimiter"
+            if not patterns[start + 2]:
+                patterns[start + 2] = "word-combination"
+
+        # Borders
+        # pattern = border-repeat
+        if not self.regexPatternBorder:
+            self.regexPatternBorder = re.compile(r"([brd]).+\1")
+        result = re.finditer(self.regexPatternBorder, typeMap)
+        for match in result:
+            start = match.start()
+            for end in range(start, len(parts)):
+                if parts[start].word == parts[end].word:
+                    if not patterns[start]:
+                        patterns[start] = "border-repeat"
+                    if not patterns[end]:
+                        patterns[end] = "border-repeat"
+                elif parts[start].word == parts[end].word[::-1] or \
+                     parts[start].word == self.reverseParen(parts[end].word):
+                    if not patterns[start]:
+                        patterns[start] = "border-mirror"
+                    if not patterns[end]:
+                        patterns[end] = "border-mirror"
+
+        for index in range(0, len(parts)):
+            if patterns[index]:
+                break
+            else:
+                patterns[index] = 'prefix'
+        for index in range(len(parts) - 1, -1, -1):
+            if patterns[index]:
+                break
+            else:
+                patterns[index] = 'suffix'
+
+        cost = 1
+        for pattern, part in itertools.izip(patterns, parts):
+            cost *= part.finalCost
+        return cost
 
 def main(pw):
-    pw = Password(pw)
-    while findParts(pw):
+    pc = PassCheck(pw)
+    while pc.findParts():
         pass
-    lowestCost = float('inf')
-    for parts in pw.getParts(combination = True):
-#        for part in parts:
-#            print part
-#        print
-        cost = compareParts(parts)
-        if cost < lowestCost:
-            lowestCost = cost
-            finalParts = parts
+    parts = pc.findLowestCost()
 
     result = []
     totalCost = 1
-    for part in finalParts:
+    for part in parts:
         if part.type:
-            result.append("<p>Found</p>\n\t<ul><li>part '{}'</li>\n\t<li>type '{}'</li>\n\t<li>mutations '{}'</li>\n\t<li>pattern '{}'</li>\n\t<li>base cost '{}'</li>\n\t<li>total cost '{}'</li></ul>".format(
-                part.word, part.type, part.mutations, part.pattern, part.cost, part.finalCost))
+            result.append("<p>Found</p>\n\t<ul><li>part '{}'</li>\n\t<li>type '{}'</li>\n\t<li>mutations '{}'</li>\n\t<li>base cost '{}'</li>\n\t<li>total cost '{}'</li></ul>".format(
+                part.word, part.type, part.mutations, part.cost, part.finalCost))
             totalCost *= part.finalCost
         else:
             result.append("Found part '{}'".format(part.word))
@@ -143,20 +164,21 @@ def main(pw):
 
 if __name__ == "__main__":
     #pw = "correcthorsebatterystaple"
-    pw = "((!11!No!5))01/49"
+    #pw = "((!11!No!5))01/49"
+    pw = "102399842"
     #pw = "08-31-2004"
     #pw = "dog$hose"
     #pw = "To be or not to be, that is the question"
     #pw = "<<<<notG00dP4$$word>>>>tim2008-08"
-    #pw = "wpm,.op[456curkky"
+    pw = "wpm,.op[456curkky"
     #pw = "$$money$$"
     #pw = "!!andtammytammy!!"
     #pw = "--word&second--"
     #pw = "$$money"
     #pw = "B3taM4le"
-    pw = "$$thing$$"
-#    cProfile.run('main(pw)', 'p4ssw0rd_correcthorsebattery')
-#    p = pstats.Stats('p4ssw0rd_correcthorsebattery')
-#    p.sort_stats('cum')
-#    p.print_stats()
-    main(pw)
+    #pw = "$$thing$$"
+    cProfile.run('main(pw)', 'p4ssw0rd_correcthorsebattery')
+    p = pstats.Stats('p4ssw0rd_correcthorsebattery')
+    p.sort_stats('cum')
+    p.print_stats()
+#    main(pw)
