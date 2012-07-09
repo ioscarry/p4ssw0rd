@@ -163,6 +163,7 @@ def main(pw):
     return '<br>\n'.join(result)
 
 if __name__ == "__main__":
+    profile = False
     #pw = "correcthorsebatterystaple"
     #pw = "((!11!No!5))01/49"
     pw = "102399842"
@@ -177,8 +178,11 @@ if __name__ == "__main__":
     #pw = "$$money"
     #pw = "B3taM4le"
     #pw = "$$thing$$"
-    cProfile.run('main(pw)', 'p4ssw0rd_correcthorsebattery')
-    p = pstats.Stats('p4ssw0rd_correcthorsebattery')
-    p.sort_stats('cum')
-    p.print_stats()
-#    main(pw)
+    pw = "2009/04/21"
+    if profile:
+        cProfile.run('main(pw)', 'p4ssw0rd_correcthorsebattery')
+        p = pstats.Stats('p4ssw0rd_correcthorsebattery')
+        p.sort_stats('cum')
+        p.print_stats()
+    else:
+        main(pw)
