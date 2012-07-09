@@ -90,10 +90,9 @@ class Password(object):
         '$':['s'],
         '7':['t'],
         '%':['z']}
-    regexContainsLetters = re.compile(r"[a-zA-Z]")
-    regexMirror = re.compile(r"([(\[{{<])(\1{0,10}).+")
-    regexBorder = re.compile(r"(^[^a-zA-Z0-9]{1,10}).+\1")
-    regexDate = re.compile(r"(\d{1,4})([-/_. ])?(\d{1,4})?\2?(\d{1,4})?$")
+    regexContainsLetters = None
+    regexDate = None
+    regexBruteFullSet = None
 
     def __init__(self, password):
         # TODO: Save type of each character (lower, number, symbol) to avoid so many regex calls later
@@ -272,6 +271,9 @@ class Password(object):
     def addQueue(self, part, prefix, suffix, sub, type=None, mutations=None,
                  cost=None, memo=False):
         if not memo:
+            # TODO: Required for unit testing - may be worth refactoring
+            if not part.word in self.queueMemo:
+                self.queueMemo[part.word] = []
             self.queueMemo[part.word].append(
                 [prefix, suffix, sub, type, mutations, cost])
         self.queue.append([part, Part(prefix), Part(suffix),
@@ -346,20 +348,27 @@ class Password(object):
         Performs a general regex for date formats, then validates digits."""
         word = part.word
         for prefix, suffix, sub in self.subPermutations(word, minLength=4):
-            if re.search(Password.regexContainsLetters, sub):
+            if self.regexContainsLetters is None:
+                self.regexContainsLetters = re.compile(r"[a-zA-Z]")
+            if re.search(self.regexContainsLetters, sub):
                 continue
-
+            if self.regexDate is None:
+                self.regexDate = re.compile(
+                    r"((19|20)\d{2}|\d{2})([-/_. ])?([1-3]?[0-9])?\2?((19|20)\d{2}|\d{2})?$")
             result = re.match(self.regexDate, sub)
             if result:
                 # Not sure what's a month, day, or year - let isDate decide
                 places = (
                     result.group(1),
-                    result.group(3),
-                    result.group(4))
+                    result.group(4),
+                    result.group(5))
                 places = [int(x) if x is not None else None for x in places]
                 (type, cost) = self.isDate(places[0], places[1], places[2])
                 if not type:
-                    return False
+                    continue
+#                print sub
+#                print places
+#                print "Found: {}, cost: {}".format(type, cost)
                 self.addQueue(part, prefix, suffix, sub, type, cost=cost)
 
     def isRepeated(self, first, word):
@@ -409,15 +418,21 @@ class Password(object):
     def findBruteForce(self, part):
         """Find brute force time after all other patterns are exhausted."""
         word = part.word
-        if re.search("[^0-9a-zA-Z._!-@*#/$&]", word):
+        if not self.regexBruteFullSet:
+            self.regexBruteFullSet = re.compile(r"[^0-9a-zA-Z._!-@*#/$&]")
+            self.regexNotAlphanum = re.compile(r"[^0-9a-zA-Z]")
+            self.regexCapital = re.compile("^[A-Z]+$")
+            self.regexLower = re.compile("^[a-z]+$")
+            self.regexNumber = re.compile("^[0-9]+$")
+        if re.search(self.regexBruteFullSet, word):
             charset = 94
-        elif re.search("[^0-9a-zA-Z]", word):
+        elif re.search(self.regexNotAlphanum, word):
             charset = 72
-        elif re.search("^[A-Z]+$", word):
+        elif re.search(self.regexCapital, word):
             charset = 26
-        elif re.search("^[a-z]+$", word):
+        elif re.search(self.regexLower, word):
             charset = 26
-        elif re.search("^[0-9]+$", word):
+        elif re.search(self.regexNumber, word):
             charset = 10
         else:
             charset = 52
