@@ -354,7 +354,7 @@ class Password(object):
                 continue
             if self.regexDate is None:
                 self.regexDate = re.compile(
-                    r"((19|20)\d{2}|\d{2})([-/_. ])?([1-3]?[0-9])?\2?((19|20)\d{2}|\d{2})?$")
+                    r"((19|20)\d{2}|\d{2})([-/_. ])?([0-3]?[0-9])?\3?((19|20)\d{2}|\d{2})?$")
             result = re.match(self.regexDate, sub)
             if result:
                 # Not sure what's a month, day, or year - let isDate decide
