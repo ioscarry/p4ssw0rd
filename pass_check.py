@@ -23,18 +23,29 @@ class PassCheck(object):
         self.password = Password(password)
 
     def findParts(self):
-        """Searches for all possible patterns in the given Password object. Returns
-         True if any match is found, False if not."""
+        """Searches for all possible patterns in the given Password object.
+        Returns True if any match is found, False if not."""
         for part in self.password.getParts():
-            #print "{} | {} | {}".format(part, part.prev, part.next)
             if part.type:
                 continue
-            if not self.password.checkMemo(part):
-                self.password.findDate(part)
-                self.password.findWord(part)
-                self.password.findKeyRun(part)
-                self.password.findRepeated(part)
-                self.password.findBruteForce(part)
+            #if not self.password.checkMemo(part):
+            if len(part.word) >= 9:
+                self.password.findWord(part, minLength = len(part.word) // 3)
+                if not self.password.queue and len(part.word) > 12:
+                    for min_ in range(len(part.word) // 3 - 1, 1, -1):
+                        self.password.findWord(
+                            part, minLength=min_, start=len(part.word) - min_,
+                            returnFirst=True)
+            else:
+                self.password.findWord(part, minLength=3)
+#                self.password.findWord(part)
+            self.password.findDate(part)
+            self.password.findKeyRun(part)
+            if len(part.word) > 2:
+                self.password.findRepeated(part, minLength=3)
+            else:
+                self.password.findRepeated(part, minLength=2)
+            self.password.findBruteForce(part)
         if self.password.queue:
             self.password.addParts()
             return True
@@ -53,13 +64,13 @@ class PassCheck(object):
         lowestCost = float('inf')
         finalParts = []
         for parts in self.password.getParts(combination = True):
-            cost = self.compareParts(parts)
+            cost = self.compareParts(parts, lowestCost)
             if cost < lowestCost:
                 lowestCost = cost
                 finalParts = parts
         return finalParts
 
-    def compareParts(self, parts):
+    def compareParts(self, parts, lowestCost):
         typeMap = ''.join([part.type[0] for part in parts])
 
         # Parts are shared between combinations - can't modify them!
@@ -163,26 +174,30 @@ def main(pw):
     return '<br>\n'.join(result)
 
 if __name__ == "__main__":
-    profile = False
-    #pw = "correcthorsebatterystaple"
+    profile = 1
+    pw = "xyzzybunchofsmallwords"
+    #pw = "correcthorsebattery"
     #pw = "((!11!No!5))01/49"
-    pw = "102399842"
+    #pw = "10/23/99"
     #pw = "08-31-2004"
     #pw = "dog$hose"
     #pw = "To be or not to be, that is the question"
-    #pw = "<<<<notG00dP4$$word>>>>tim2008-08"
-    pw = "wpm,.op[456curkky"
+    #pw = "notG00dP4$$word>>"
+    #pw = "asdfawrbteabfdagawe"
+    #pw = "wpm,.op[456curkky"
     #pw = "$$money$$"
     #pw = "!!andtammytammy!!"
     #pw = "--word&second--"
     #pw = "$$money"
     #pw = "B3taM4le"
     #pw = "$$thing$$"
-    pw = "2009/04/21"
+    #pw = "2009/04/21"
     if profile:
-        cProfile.run('main(pw)', 'p4ssw0rd_correcthorsebattery')
-        p = pstats.Stats('p4ssw0rd_correcthorsebattery')
+        command = 'main(pw)'
+        cProfile.runctx(
+            command, globals(), locals(), filename="random-chars.profile")
+        p = pstats.Stats('random-chars.profile')
         p.sort_stats('cum')
-        p.print_stats()
+        p.print_stats(5)
     else:
         main(pw)
