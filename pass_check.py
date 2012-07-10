@@ -14,10 +14,6 @@ class PassCheck(object):
         "]": "[",
         "}": "{",
         ">": "<"}
-    regexPatternDictRepeat = None
-    regexPatternDictCombination = None
-    regexPatternDictDelimiter = None
-    regexPatternBorder = None
 
     def __init__(self, password):
         self.password = Password(password)
@@ -58,8 +54,6 @@ class PassCheck(object):
                 word[i] = self.parenMatch[word[i]]
         return ''.join(word)
 
-    regexPatternDictRepeat = None
-
     def findLowestCost(self):
         lowestCost = float('inf')
         finalParts = []
@@ -78,9 +72,7 @@ class PassCheck(object):
 
         # Dictionary-repeated
         # pattern = word-repeat
-        if not self.regexPatternDictRepeat:
-            self.regexPatternDictRepeat = re.compile(r"(?=(ww))")
-        result = re.finditer(self.regexPatternDictRepeat, typeMap)
+        result = re.finditer(r"(?=(ww))", typeMap)
         for match in result:
             start = match.start()
             if parts[start].word == parts[start + 1].word:
@@ -91,9 +83,7 @@ class PassCheck(object):
 
         # Dictionary-combination(2)
         # pattern = word-combination
-        if not self.regexPatternDictCombination:
-            self.regexPatternDictCombination = re.compile(r"(?=(ww))")
-        result = re.finditer(self.regexPatternDictCombination, typeMap)
+        result = re.finditer(r"(?=(ww))", typeMap)
         for match in result:
             start = match.start()
             if not patterns[start]:
@@ -104,9 +94,7 @@ class PassCheck(object):
         # Dictionary-combination (delimiter)
         # pattern = word-combination-delimiter
 
-        if not self.regexPatternDictDelimiter:
-            self.regexPatternDictDelimiter = re.compile(r"(?=(w[rdb]w))")
-        result = re.finditer(self.regexPatternDictDelimiter, typeMap)
+        result = re.finditer(r"(?=(w[rdb]w))", typeMap)
         for match in result:
             start = match.start()
             if not patterns[start]:
@@ -118,9 +106,7 @@ class PassCheck(object):
 
         # Borders
         # pattern = border-repeat
-        if not self.regexPatternBorder:
-            self.regexPatternBorder = re.compile(r"([brd]).+\1")
-        result = re.finditer(self.regexPatternBorder, typeMap)
+        result = re.finditer(r"([brd]).+\1", typeMap)
         for match in result:
             start = match.start()
             for end in range(start, len(parts)):

@@ -90,9 +90,6 @@ class Password(object):
         '$':['s'],
         '7':['t'],
         '%':['z']}
-    regexContainsLetters = None
-    regexDate = None
-    regexBruteFullSet = None
 
     def __init__(self, password):
         # TODO: Save type of each character (lower, number, symbol) to avoid so many regex calls later
@@ -348,14 +345,9 @@ class Password(object):
         Performs a general regex for date formats, then validates digits."""
         word = part.word
         for prefix, suffix, sub in self.subPermutations(word, minLength=4):
-            if self.regexContainsLetters is None:
-                self.regexContainsLetters = re.compile(r"[a-zA-Z]")
-            if re.search(self.regexContainsLetters, sub):
+            if re.search(r"[a-zA-Z]", sub):
                 continue
-            if self.regexDate is None:
-                self.regexDate = re.compile(
-                    r"((19|20)\d{2}|\d{2})([-/_. ])?([0-3]?[0-9])?\3?((19|20)\d{2}|\d{2})?$")
-            result = re.match(self.regexDate, sub)
+            result = re.match(r"((19|20)\d{2}|\d{2})([-/_. ])?([0-3]?[0-9])?\3?((19|20)\d{2}|\d{2})?$", sub)
             if result:
                 # Not sure what's a month, day, or year - let isDate decide
                 places = (
@@ -421,21 +413,15 @@ class Password(object):
     def findBruteForce(self, part):
         """Find brute force time after all other patterns are exhausted."""
         word = part.word
-        if not self.regexBruteFullSet:
-            self.regexBruteFullSet = re.compile(r"[^0-9a-zA-Z._!-@*#/$&]")
-            self.regexNotAlphanum = re.compile(r"[^0-9a-zA-Z]")
-            self.regexCapital = re.compile("^[A-Z]+$")
-            self.regexLower = re.compile("^[a-z]+$")
-            self.regexNumber = re.compile("^[0-9]+$")
-        if re.search(self.regexBruteFullSet, word):
+        if re.search(r"[^0-9a-zA-Z._!-@*#/$&]", word):
             charset = 94
-        elif re.search(self.regexNotAlphanum, word):
+        elif re.search(r"[^0-9a-zA-Z]", word):
             charset = 72
-        elif re.search(self.regexCapital, word):
+        elif re.search(r"^[A-Z]+$", word):
             charset = 26
-        elif re.search(self.regexLower, word):
+        elif re.search(r"^[a-z]+$", word):
             charset = 26
-        elif re.search(self.regexNumber, word):
+        elif re.search(r"^[0-9]+$", word):
             charset = 10
         else:
             charset = 52

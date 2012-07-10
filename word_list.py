@@ -11,8 +11,6 @@ import binary_search
 import cProfile
 
 searchMemo = {}
-regexNotLowercase = re.compile("[^a-z]")
-regexNotLowercaseApostrophe = re.compile("[^a-z']")
 
 type = ['letter','digit','letterapostrophe','combined']
 wordPath = "words"
