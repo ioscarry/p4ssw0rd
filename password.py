@@ -103,11 +103,11 @@ class Password(object):
         self.queue = []
         self.queueMemo = {}
 
-    def subPermutations(self, word, maxLength=20, minLength=4):
+    def subPermutations(self, word, start=0, minLength=4):
         """Generates all possible substrings, from longest to shortest."""
         length = len(word)
         endRange = length - minLength + 2
-        for i in range(0, endRange):
+        for i in range(start+1, endRange):
             start = -1
             end = length-i
             for j in range(0, i):
@@ -185,28 +185,24 @@ class Password(object):
         replaced = [index for index, char in enumerate(word) if char.isupper()]
         return replaced, word.lower()
 
-    def searchDictionary(self, word):
-        """Ask word_list to find the word, and return the number of records
-        searched, or False if not found."""
-        return word_list.findWord(word)
+#    def checkMemo(self, part):
+#        if part.word in self.queueMemo:
+#            if self.queueMemo:
+#                for item in self.queueMemo[part.word]:
+#                    self.addQueue(part, item[0], item[1], item[2], item[3],
+#                                  item[4], item[5], memo=True)
+#            return True
+#        else:
+#            self.queueMemo[part.word] = []
+#        return False
 
-    def checkMemo(self, part):
-        if part.word in self.queueMemo:
-            if self.queueMemo:
-                for item in self.queueMemo[part.word]:
-                    self.addQueue(part, item[0], item[1], item[2], item[3],
-                                  item[4], item[5], memo=True)
-            return True
-        else:
-            self.queueMemo[part.word] = []
-        return False
-
-    def findWord(self, part):
+    def findWord(self, part, minLength=4, start=0, returnFirst=False):
         """Removes and saves mutations, then attempts to find the largest
-        dictionary word (larger than two characters) within the given part
+        dictionary word (larger than minLength characters) within the given part
         index."""
         word = part.word
-        for prefix, suffix, sub in self.subPermutations(word, minLength=4):
+        for prefix, suffix, sub in self.subPermutations(
+            word, minLength=minLength, start=start):
             mutations = []
             replaced, sub = self.removeDelimiter(sub)
             if replaced:
@@ -219,20 +215,24 @@ class Password(object):
                 mutations.append((Mutation('case', replaced)))
 
             for replaced, subUnLeet in self.removeLeet(sub):
-                cost = self.searchDictionary(subUnLeet)
+                cost = word_list.searchDictionary(subUnLeet)
                 if cost:
                     if replaced:
                         mutations.append(Mutation('leet', replaced))
                         # Replace part, indicate that it is a word
                     self.addQueue(
                         part, prefix, suffix, subUnLeet, "word", mutations, cost)
+                    if returnFirst:
+                        return
                 elif replaced:
                     # Need to also check un-leeted word against special-
                     # character wordlists
-                    cost = self.searchDictionary(sub)
+                    cost = word_list.searchDictionary(sub)
                     if cost:
                         self.addQueue(
                             part, prefix, suffix, sub, "word", mutations, cost)
+                        if returnFirst:
+                            return
 
     def isYear(self, num):
         if (1940 <= num <= 2020) or (40 <= num <= 99) or (0 <= num <= 20):
@@ -270,12 +270,12 @@ class Password(object):
 
     def addQueue(self, part, prefix, suffix, sub, type=None, mutations=None,
                  cost=None, memo=False):
-        if not memo:
-            # TODO: Required for unit testing - may be worth refactoring
-            if not part.word in self.queueMemo:
-                self.queueMemo[part.word] = []
-            self.queueMemo[part.word].append(
-                [prefix, suffix, sub, type, mutations, cost])
+#        if not memo:
+#            # TODO: Required for unit testing - may be worth refactoring
+#            if not part.word in self.queueMemo:
+#                self.queueMemo[part.word] = []
+#            self.queueMemo[part.word].append(
+#                [prefix, suffix, sub, type, mutations, cost])
         self.queue.append([part, Part(prefix), Part(suffix),
                            Part(sub, type, mutations, cost)])
 
@@ -366,6 +366,9 @@ class Password(object):
                 (type, cost) = self.isDate(places[0], places[1], places[2])
                 if not type:
                     continue
+                print sub
+                print places
+                print type
 #                print sub
 #                print places
 #                print "Found: {}, cost: {}".format(type, cost)
@@ -388,10 +391,10 @@ class Password(object):
             return 52 * len(word)
         return 94 * len(word)
 
-    def findRepeated(self, part):
+    def findRepeated(self, part, minLength=3):
         """Finds repeated characters."""
         word = part.word
-        for prefix, suffix, sub in self.subPermutations(word, minLength=2):
+        for prefix, suffix, sub in self.subPermutations(word, minLength=minLength):
             mutations = []
             if self.isRepeated(sub[0], sub):
                 cost = self.charCost(sub)
@@ -446,3 +449,5 @@ if __name__ == "__main__":
 #    for combination in pw.getCombinations():
 #        print combination
     pw = Password("rootword")
+#    for prefix, suffix, sub in pw.subPermutations(pw.root.next[0].word):
+#        print sub
