@@ -204,7 +204,7 @@ def closeFiles():
     for fn in wordFiles:
         fn["handle"].close()
 
-def findWord(word):
+def searchDictionary(word):
     global searchMemo
     # Open files if necessary
     if word in searchMemo:
