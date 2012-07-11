@@ -15,8 +15,10 @@ def hello_world(request):
             result = pass_check.main(password)
         else:
             result = ""
+            password = ""
     except KeyError:
         result = "No password entered."
+        password = ""
     layout = """<html>
     <head>
     <title>p4ssw0rd demo</title>
@@ -27,16 +29,15 @@ def hello_world(request):
     <p>Please report any bugs or feature requests to <a href="mailto:threehams@gmail.com">threehams@gmail.com</a>.</p>
     <h2>Upcoming features</h2>
     <ul>
-    <li>Combination dictionary</li>
-    <li>Multiple calculations - best-case crack time chosen</li>
+    <li>Better cost-checking (best-case and worst-case)</li>
     </ul>
     <form action="." method="POST">
-    <input name="password" type="text">
+    <input name="password" type="text" value="{}">
     <input name="Analyze" type="submit" >
     </form>
     {}
     </body>
-    </html>""".format(result)
+    </html>""".format(password, result)
     return Response(layout)
 
 def main():

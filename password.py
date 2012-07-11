@@ -36,13 +36,6 @@ class Part(object):
     finalCost = property(_getFinalCost)
 
 class Mutation(object):
-    typeCost = {
-        "delimiter": 20,
-        "leet": 64,
-        "charSwap": 49,
-        "charRemove": 49,
-        "charDupe": 49,}
-
     def __init__(self, type, index):
         self.type = type
         self.index = index
@@ -59,7 +52,7 @@ class Mutation(object):
         if self.type == "upper":
             return 3
         if self.type == "leet":
-            return 64
+            return 32
         if self.type == "delimiter":
             return 128
         if self.type in ("charSwap", "charDupe", "charRemove"):

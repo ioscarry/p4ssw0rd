@@ -169,7 +169,7 @@ def main(pw):
 
 if __name__ == "__main__":
     profile = 0
-    randomPassword = 0
+    randomPassword = 1
     pw = "qwerbunchasdfsmall"
     pw = "correcthorsebattery"
     pw = "((!11!No!5))01/49"
@@ -197,8 +197,8 @@ if __name__ == "__main__":
     pw = "imranskuri"
     pw = "rheybeth"
     pw = "brewstabb"
-    pw = "ffffffffffffff"
-    pw = "$$money$$"
+    pw = "5mona$$$"
+    pw = "tuktik2517"
 
     if randomPassword:
         import os, random
