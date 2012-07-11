@@ -173,6 +173,24 @@ class TestRemove(unittest.TestCase):
         self.assertEqual(pw.removeDelimiter(
             pw.root.next[0].word), ([], "f_a_il"))
 
+    def testKeyRun(self):
+        pw = pass_check.Password("sdfghjkl")
+        pw.findKeyRun(pw.root.next[0])
+        pw.addParts()
+        node = pw.root.next[0]
+        self.assertEqual(node.word, "123qweasdzxc")
+        self.assertEqual(node.type, "keyboard")
+        self.assertEqual(node.cost, )
+
+    def testKeyRunBreaks(self):
+        pw = pass_check.Password("123qweasd")
+        pw.findKeyRun(pw.root.next[0])
+        pw.addParts()
+        node = pw.root.next[0]
+        self.assertEqual(node.word, "123qweasdzxc")
+        self.assertEqual(node.type, "keyboard")
+        self.assertEqual(node.cost, 26 ** 9)
+
     def testBruteForce(self):
         pw = pass_check.Password("owirudyas")
         pw.findBruteForce(pw.root.next[0])

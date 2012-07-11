@@ -112,15 +112,14 @@ class Password(object):
                 end += 1
                 yield (word[:start], word[end:], word[start:end])
 
+    def findEmail(self, word):
+        # TODO: Find email and warn (do not use personal email addresses -
+        # consider them public information)
+        pass
+
     def removeDelimiter(self, word, minNum=4):
         """Search for a delimiter between each character.
         Returns an array of changes and the modified string."""
-        # word: "p-a-s-s-w-o-r-d"
-        # word: "-p-a-s-s-2008"
-        # word: "---$-$---@%"
-        # check first character for delimiter
-        # check every other character from there on
-        # minimum match length of 4 by default
         count = 1
         replaced = []
         symbols = "`~!@#$%^&*()-_=+[{]};:\\'\",<.>/? "
@@ -199,7 +198,8 @@ class Password(object):
         index."""
         word = part.word
         for prefix, suffix, sub in self.subPermutations(
-            word, minLength=minLength, start=start):
+            word, minLength=minLength,
+            start=start):
             mutations = []
             replaced, sub = self.removeDelimiter(sub)
             if replaced:
@@ -340,9 +340,11 @@ class Password(object):
         self.queue = []
 
 
-    def findDate(self, part):
+    def findDate(self, part, returnFirst=False):
         """Search for a date in any possible format.
         Performs a general regex for date formats, then validates digits."""
+
+        # TODO: Include words for dates - Apr2092
         word = part.word
         for prefix, suffix, sub in self.subPermutations(word, minLength=4):
             if re.search(r"[a-zA-Z]", sub):
@@ -358,13 +360,12 @@ class Password(object):
                 (type, cost) = self.isDate(places[0], places[1], places[2])
                 if not type:
                     continue
-                print sub
-                print places
-                print type
 #                print sub
 #                print places
-#                print "Found: {}, cost: {}".format(type, cost)
+#                print type
                 self.addQueue(part, prefix, suffix, sub, type, cost=cost)
+                if returnFirst:
+                    return
 
     def isRepeated(self, first, word):
         """Improve efficiency over collections.Counter()"""
@@ -386,6 +387,7 @@ class Password(object):
     def findRepeated(self, part, minLength=3):
         """Finds repeated characters."""
         word = part.word
+
         for prefix, suffix, sub in self.subPermutations(word, minLength=minLength):
             mutations = []
             if self.isRepeated(sub[0], sub):
@@ -400,15 +402,22 @@ class Password(object):
                     mutations.append(Mutation('case', replaced))
                 self.addQueue(part, prefix, suffix, sub, 'repetition',
                               mutations, cost=cost)
+                # Bail out early if the entire word is repetition
+                if len(sub) == len(word):
+                    return
 
-    def findKeyRun(self, part):
+    def findKeyRun(self, part, minLength=4):
         """Finds consecutive runs on the keyboard through graphs - minimum of
         three is typical."""
         word = part.word
-        for prefix, suffix, sub in self.subPermutations(word, minLength=3):
-            if key_graph.isRun(sub):
-                cost = len(sub)
+
+        for prefix, suffix, sub in self.subPermutations(word, minLength=minLength):
+            cost = key_graph.isRun(sub)
+            if cost:
                 self.addQueue(part, prefix, suffix, sub, 'keyboard', [], cost)
+                # Bail out early if the entire word is a run
+                if len(sub) == len(word):
+                    return
 
     def findBruteForce(self, part):
         """Find brute force time after all other patterns are exhausted."""

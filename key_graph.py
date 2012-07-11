@@ -1,6 +1,7 @@
 import cProfile
 
 layouts = []
+
 # New auto keygraph - thanks, Dan Wheeler (with modifications)
 layoutQwerty = """\
 `~ 1! 2@ 3# 4$ 5% 6^ 7& 8* 9( 0) -_ =+
@@ -42,14 +43,32 @@ def getOrEmpty(layout, y, x):
     except IndexError:
         return []
 
-def isRun(word):
+def isRun(word, minLength=3):
+    breaks = 0
+    run = 0
+    cost = 0
+    # TODO: number of turns
+    turns = 0
     if not layouts:
         createLayouts()
     for layout in layouts:
         for char, next in zip(word, word[1:]):
+            run += 1
             if char == " " or not layout.keys[char].hasNeighbor(next):
-                return False
-    return True
+                if run < minLength:
+                    return False
+                breaks += 1
+                run = 0
+    if run < minLength:
+        return False
+    # Cost of all horizontal runs >2 with no turns: 264
+    # Cost of all vertical runs >2 with no turns: 30
+    # Cost of all runs with one break: 264^2 = 69696
+    # Cost of all runs with two breaks: 264^3 = 18399744
+    if breaks > 3:
+        return False
+    cost += 264**(breaks + 1)
+    return cost
 
 
 def createLayouts():

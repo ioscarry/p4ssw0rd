@@ -19,23 +19,26 @@ class PassCheck(object):
         self.password = Password(password)
 
     def findParts(self):
-        """Searches for all possible patterns in the given Password object.
+        """Searches for possible patterns in the given Password object.
         Returns True if any match is found, False if not."""
         for part in self.password.getParts():
             if part.type:
                 continue
             #if not self.password.checkMemo(part):
             if len(part.word) >= 9:
-                self.password.findWord(part, minLength = len(part.word) // 3)
-                if not self.password.queue and len(part.word) > 12:
-                    for min_ in range(len(part.word) // 3 - 1, 1, -1):
+                self.password.findWord(part, minLength = len(part.word) // 2)
+                if not self.password.queue:
+                    for min_ in range(len(part.word) // 2 - 1, 1, -1):
                         self.password.findWord(
                             part, minLength=min_, start=len(part.word) - min_,
                             returnFirst=True)
+                        if self.password.queue:
+                            break
             else:
                 self.password.findWord(part, minLength=3)
 #                self.password.findWord(part)
-            self.password.findDate(part)
+            self.password.findEmail(part)
+            self.password.findDate(part, returnFirst=True)
             self.password.findKeyRun(part)
             if len(part.word) > 2:
                 self.password.findRepeated(part, minLength=3)
@@ -161,14 +164,18 @@ def main(pw):
 
 if __name__ == "__main__":
     profile = 1
-    pw = "xyzzybunchofsmallwords"
-    #pw = "correcthorsebattery"
-    #pw = "((!11!No!5))01/49"
+    randomPassword = 1
+    pw = "qwerbunchasdfsmall"
+    pw = "correcthorsebattery"
+    pw = "((!11!No!5))01/49"
+    pw = "This is a long, but terrible passphrase."
+    pw = "22200" # 2/22/00?
     #pw = "10/23/99"
+    #pw = "123qweasdzxc"
     #pw = "08-31-2004"
     #pw = "dog$hose"
     #pw = "To be or not to be, that is the question"
-    #pw = "notG00dP4$$word>>"
+    #pw = "<<notG00dP4$$word>>tim2008-09-04"
     #pw = "asdfawrbteabfdagawe"
     #pw = "wpm,.op[456curkky"
     #pw = "$$money$$"
@@ -178,12 +185,23 @@ if __name__ == "__main__":
     #pw = "B3taM4le"
     #pw = "$$thing$$"
     #pw = "2009/04/21"
+    #pw = "kirsygirl23"
+    if randomPassword:
+        import os, random
+        passwordFile = os.path.join("words", "work", "rockyou.txt")
+        f = open(passwordFile)
+        size = os.stat(passwordFile).st_size
+        f.seek(random.randint(0, size))
+        f.readline()
+        pw = f.readline().rstrip("\r\n")
+        f.close()
+
     if profile:
         command = 'main(pw)'
         cProfile.runctx(
             command, globals(), locals(), filename="random-chars.profile")
         p = pstats.Stats('random-chars.profile')
         p.sort_stats('cum')
-        p.print_stats(5)
+        p.print_stats(1)
     else:
         main(pw)
