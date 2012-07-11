@@ -97,20 +97,6 @@ class TestFind(unittest.TestCase):
         pw = pass_check.Password("1900")
         pw.findDate(pw.root.next[0])
 
-    def testFindBorderSimple(self):
-        pw = pass_check.Password("!!,,,,,,,,!!")
-        pass_check.findParts(pw)
-        pw.addParts()
-        self.assertEqual(pw.parts[0].word, "!!")
-        self.assertEqual(pw.parts[0].type, "repetition")
-        self.assertEqual(pw.parts[0].mutations, [])
-        self.assertEqual(pw.parts[1].word, ",,,,,,,,")
-        self.assertEqual(pw.parts[1].type, "repetition")
-        self.assertEqual(pw.parts[1].mutations, [])
-        self.assertEqual(pw.parts[2].word, "!!")
-        self.assertEqual(pw.parts[2].type, "repetition")
-        self.assertEqual(pw.parts[2].mutations, [])
-
     def testFindRepeated(self):
         pw = pass_check.Password("twolllllllthree")
         pw.findRepeated(pw.root.next[0])
@@ -118,8 +104,6 @@ class TestFind(unittest.TestCase):
         node = pw.root.next[0]
         self.assertEqual(node.word, "two")
         self.assertEqual(node.next[0].word, "lllllll")
-
-
 
     def testBinarySearch(self):
         # First entry in 9.dic
