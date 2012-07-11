@@ -21,34 +21,35 @@ class PassCheck(object):
     def findParts(self):
         """Searches for possible patterns in the given Password object.
         Returns True if any match is found, False if not."""
-        for part in self.password.getParts():
-            if part.type:
-                continue
-            #if not self.password.checkMemo(part):
-            if len(part.word) >= 9:
-                self.password.findWord(part, minLength = len(part.word) // 2)
-                if not self.password.queue:
-                    for min_ in range(len(part.word) // 2 - 1, 1, -1):
-                        self.password.findWord(
-                            part, minLength=min_, start=len(part.word) - min_,
-                            returnFirst=True)
-                        if self.password.queue:
-                            break
+        while True:
+            for part in self.password.getParts():
+                if part.type:
+                    continue
+                #if not self.password.checkMemo(part):
+                if len(part.word) >= 9:
+                    self.password.findWord(part, minLength = len(part.word) // 2)
+                    if not self.password.queue:
+                        for min_ in range(len(part.word) // 2 - 1, 1, -1):
+                            self.password.findWord(
+                                part, minLength=min_, start=len(part.word) - min_,
+                                returnFirst=True)
+                            if self.password.queue:
+                                break
+                else:
+                    self.password.findWord(part, minLength=3)
+    #                self.password.findWord(part)
+                self.password.findEmail(part)
+                self.password.findDate(part, returnFirst=True)
+                self.password.findKeyRun(part)
+                if len(part.word) > 2:
+                    self.password.findRepeated(part, minLength=3)
+                else:
+                    self.password.findRepeated(part, minLength=2)
+                self.password.findBruteForce(part)
+            if self.password.queue:
+                self.password.addParts()
             else:
-                self.password.findWord(part, minLength=3)
-#                self.password.findWord(part)
-            self.password.findEmail(part)
-            self.password.findDate(part, returnFirst=True)
-            self.password.findKeyRun(part)
-            if len(part.word) > 2:
-                self.password.findRepeated(part, minLength=3)
-            else:
-                self.password.findRepeated(part, minLength=2)
-            self.password.findBruteForce(part)
-        if self.password.queue:
-            self.password.addParts()
-            return True
-        return False
+                break
 
     def reverseParen(self, word):
         word = list(word)
@@ -60,12 +61,16 @@ class PassCheck(object):
     def findLowestCost(self):
         lowestCost = float('inf')
         finalParts = []
+        finalPatterns = []
         for parts in self.password.getParts(combination = True):
-            cost = self.compareParts(parts, lowestCost)
+            (patterns, cost) = self.compareParts(parts, lowestCost)
             if cost < lowestCost:
                 lowestCost = cost
                 finalParts = parts
-        return finalParts
+                finalPatterns = patterns
+        for index, part in enumerate(finalParts):
+            part.pattern = finalPatterns[index]
+        self.finalParts = finalParts
 
     def compareParts(self, parts, lowestCost):
         typeMap = ''.join([part.type[0] for part in parts])
@@ -139,14 +144,14 @@ class PassCheck(object):
         cost = 1
         for pattern, part in itertools.izip(patterns, parts):
             cost *= part.finalCost
-        return cost
+        return patterns, cost
 
 def main(pw):
     pc = PassCheck(pw)
-    while pc.findParts():
-        pass
-    parts = pc.findLowestCost()
+    pc.findParts()
+    pc.findLowestCost()
 
+    parts = pc.finalParts
     result = []
     totalCost = 1
     for part in parts:
@@ -193,6 +198,7 @@ if __name__ == "__main__":
     pw = "rheybeth"
     pw = "brewstabb"
     pw = "ffffffffffffff"
+    pw = "$$money$$"
 
     if randomPassword:
         import os, random

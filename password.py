@@ -394,7 +394,7 @@ class Password(object):
             upper = []
         word = part.word
         caseIndex = []
-        run = 0
+        run = 1
         start = 0
         end = len(word) - 1
         for index, char in enumerate(word):
@@ -403,7 +403,7 @@ class Password(object):
                     mutations = [Mutation('case', caseIndex)]
                 else:
                     mutations = None
-                if run > minLength:
+                if run >= minLength:
                     self.addQueue(
                         part        = part,
                         prefix      = word[:start],
@@ -414,7 +414,7 @@ class Password(object):
                         cost        = self.charCost(char))
                 caseIndex = []
                 start = index + 1
-                run = 0
+                run = 1
                 continue
             else:
                 if index in upper:
