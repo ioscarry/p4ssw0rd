@@ -112,10 +112,14 @@ class Password(object):
                 end += 1
                 yield (word[:start], word[end:], word[start:end])
 
-    def findEmail(self, word):
+    def findEmail(self, part):
         # TODO: Find email and warn (do not use personal email addresses -
         # consider them public information)
-        pass
+        word = part.word
+        for prefix, suffix, sub in self.subPermutations(word):
+            if re.match(
+                r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$", sub):
+                self.addQueue(part, prefix, suffix, sub, "email", [])
 
     def removeDelimiter(self, word, minNum=4):
         """Search for a delimiter between each character.
@@ -384,8 +388,9 @@ class Password(object):
             return 52 * len(word)
         return 94 * len(word)
 
-    def findRepeated(self, part, minLength=3):
+    def findRepeated(self, part, minLength=3, returnFirst=False):
         """Finds repeated characters."""
+        # TODO: Don't check substrings of the found repeated string
         word = part.word
 
         for prefix, suffix, sub in self.subPermutations(word, minLength=minLength):
@@ -393,6 +398,8 @@ class Password(object):
             if self.isRepeated(sub[0], sub):
                 cost = self.charCost(sub)
                 self.addQueue(part, prefix, suffix, sub, 'repetition', cost=cost)
+                if returnFirst:
+                    return
             elif self.isRepeated(sub[0].lower(), sub.lower()):
                 replaced, word = self.removeCase(word)
                 cost = self.charCost(sub)
@@ -402,8 +409,7 @@ class Password(object):
                     mutations.append(Mutation('case', replaced))
                 self.addQueue(part, prefix, suffix, sub, 'repetition',
                               mutations, cost=cost)
-                # Bail out early if the entire word is repetition
-                if len(sub) == len(word):
+                if returnFirst:
                     return
 
     def findKeyRun(self, part, minLength=4):

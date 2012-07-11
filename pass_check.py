@@ -41,9 +41,9 @@ class PassCheck(object):
             self.password.findDate(part, returnFirst=True)
             self.password.findKeyRun(part)
             if len(part.word) > 2:
-                self.password.findRepeated(part, minLength=3)
+                self.password.findRepeated(part, minLength=3, returnFirst=True)
             else:
-                self.password.findRepeated(part, minLength=2)
+                self.password.findRepeated(part, minLength=2, returnFirst=True)
             self.password.findBruteForce(part)
         if self.password.queue:
             self.password.addParts()
@@ -163,7 +163,7 @@ def main(pw):
     return '<br>\n'.join(result)
 
 if __name__ == "__main__":
-    profile = 1
+    profile = 0
     randomPassword = 1
     pw = "qwerbunchasdfsmall"
     pw = "correcthorsebattery"
@@ -185,7 +185,15 @@ if __name__ == "__main__":
     #pw = "B3taM4le"
     #pw = "$$thing$$"
     #pw = "2009/04/21"
+    # Possible bugs from rockyou.txt
     #pw = "kirsygirl23"
+    #pw = "ali19-45"
+    pw = "rubenaNDJUanito"
+    pw = "imranskuri"
+    pw = "rheybeth"
+    pw = "brewstabb"
+    pw = "effffffffffffff"
+
     if randomPassword:
         import os, random
         passwordFile = os.path.join("words", "work", "rockyou.txt")
