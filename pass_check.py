@@ -41,9 +41,9 @@ class PassCheck(object):
             self.password.findDate(part, returnFirst=True)
             self.password.findKeyRun(part)
             if len(part.word) > 2:
-                self.password.findRepeated(part, minLength=3, returnFirst=True)
+                self.password.findRepeated(part, minLength=3)
             else:
-                self.password.findRepeated(part, minLength=2, returnFirst=True)
+                self.password.findRepeated(part, minLength=2)
             self.password.findBruteForce(part)
         if self.password.queue:
             self.password.addParts()
@@ -164,7 +164,7 @@ def main(pw):
 
 if __name__ == "__main__":
     profile = 0
-    randomPassword = 1
+    randomPassword = 0
     pw = "qwerbunchasdfsmall"
     pw = "correcthorsebattery"
     pw = "((!11!No!5))01/49"
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     pw = "imranskuri"
     pw = "rheybeth"
     pw = "brewstabb"
-    pw = "effffffffffffff"
+    pw = "ffffffffffffff"
 
     if randomPassword:
         import os, random

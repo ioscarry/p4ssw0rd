@@ -111,6 +111,16 @@ class TestFind(unittest.TestCase):
         self.assertEqual(pw.parts[2].type, "repetition")
         self.assertEqual(pw.parts[2].mutations, [])
 
+    def testFindRepeated(self):
+        pw = pass_check.Password("twolllllllthree")
+        pw.findRepeated(pw.root.next[0])
+        pw.addParts()
+        node = pw.root.next[0]
+        self.assertEqual(node.word, "two")
+        self.assertEqual(node.next[0].word, "lllllll")
+
+
+
     def testBinarySearch(self):
         # First entry in 9.dic
         pw = pass_check.Password("123123123")

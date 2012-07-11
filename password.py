@@ -388,29 +388,42 @@ class Password(object):
             return 52 * len(word)
         return 94 * len(word)
 
-    def findRepeated(self, part, minLength=3, returnFirst=False):
+    def findRepeated(self, part, minLength=3, upper=None):
         """Finds repeated characters."""
-        # TODO: Don't check substrings of the found repeated string
+        if upper is None:
+            upper = []
         word = part.word
-
-        for prefix, suffix, sub in self.subPermutations(word, minLength=minLength):
-            mutations = []
-            if self.isRepeated(sub[0], sub):
-                cost = self.charCost(sub)
-                self.addQueue(part, prefix, suffix, sub, 'repetition', cost=cost)
-                if returnFirst:
-                    return
-            elif self.isRepeated(sub[0].lower(), sub.lower()):
-                replaced, word = self.removeCase(word)
-                cost = self.charCost(sub)
-                if replaced and len(replaced) == len(sub):
-                    mutations.append(Mutation('upper', replaced))
-                elif replaced:
-                    mutations.append(Mutation('case', replaced))
-                self.addQueue(part, prefix, suffix, sub, 'repetition',
-                              mutations, cost=cost)
-                if returnFirst:
-                    return
+        caseIndex = []
+        run = 0
+        start = 0
+        end = len(word) - 1
+        for index, char in enumerate(word):
+            if index == end or char != word[index + 1]:
+                if caseIndex:
+                    mutations = [Mutation('case', caseIndex)]
+                else:
+                    mutations = None
+                if run > minLength:
+                    self.addQueue(
+                        part        = part,
+                        prefix      = word[:start],
+                        suffix      = word[index+1:],
+                        sub         = word[start:index+1],
+                        type        = 'repetition',
+                        mutations   = mutations,
+                        cost        = self.charCost(char))
+                caseIndex = []
+                start = index + 1
+                run = 0
+                continue
+            else:
+                if index in upper:
+                    caseIndex.append(index)
+                run += 1
+#        if not upper:
+#            replaced, word = self.removeCase(word)
+#            if replaced:
+#                self.findRepeated(part, minLength, replaced)
 
     def findKeyRun(self, part, minLength=4):
         """Finds consecutive runs on the keyboard through graphs - minimum of
@@ -420,7 +433,14 @@ class Password(object):
         for prefix, suffix, sub in self.subPermutations(word, minLength=minLength):
             cost = key_graph.isRun(sub)
             if cost:
-                self.addQueue(part, prefix, suffix, sub, 'keyboard', [], cost)
+                self.addQueue(
+                    part        = part,
+                    prefix      = prefix,
+                    suffix      = suffix,
+                    sub         = sub,
+                    type        = 'keyboard',
+                    mutations   = [],
+                    cost        = cost)
                 # Bail out early if the entire word is a run
                 if len(sub) == len(word):
                     return
@@ -452,3 +472,5 @@ if __name__ == "__main__":
     pw = Password("rootword")
 #    for prefix, suffix, sub in pw.subPermutations(pw.root.next[0].word):
 #        print sub
+    pw = Password("twolllllthree")
+    pw.findRepeated(pw.root.next[0])
