@@ -1,5 +1,5 @@
 #!/usr/local/bin/python2.7
-import re, itertools
+import re, itertools, time
 import cProfile, pstats
 from password import Password
 from time_to_string import timeToString
@@ -35,9 +35,11 @@ class PassCheck(object):
                                 returnFirst=True)
                             if self.password.queue:
                                 break
+                # Disabled for performance
+#                elif 2 <= len(part.word) <= 4:
+#                    self.password.findWord(part, minLength=2, returnFirst=True)
                 else:
                     self.password.findWord(part, minLength=3)
-    #                self.password.findWord(part)
                 self.password.findEmail(part)
                 self.password.findDate(part, returnFirst=True)
                 self.password.findKeyRun(part)
@@ -146,30 +148,37 @@ class PassCheck(object):
             cost *= part.finalCost
         return patterns, cost
 
+class Analysis(object):
+    def __init__(self, word, cost=0, time=0):
+        self.word = word
+        self.cost = cost
+        self.time = time
+        self.parts = []
+
+    def addPart(self, part):
+        self.parts.append(part)
+
 def main(pw):
+    pw = str(pw)
+    timeStart = time.time()
     pc = PassCheck(pw)
     pc.findParts()
     pc.findLowestCost()
-
+    timeRun = time.time() - timeStart
     parts = pc.finalParts
-    result = []
+    result = Analysis(pw, time=timeRun)
+
     totalCost = 1
     for part in parts:
-        if part.type:
-            result.append("<p>Found</p>\n\t<ul><li>part '{}'</li>\n\t<li>type '{}'</li>\n\t<li>mutations '{}'</li>\n\t<li>base cost '{}'</li>\n\t<li>total cost '{}'</li></ul>".format(
-                part.word, part.type, part.mutations, part.cost, part.finalCost))
-            totalCost *= part.finalCost
-        else:
-            result.append("Found part '{}'".format(part.word))
+        totalCost *= part.finalCost
+        result.addPart(part)
+    result.totalCost = timeToString(totalCost // 1000000000)
 
-    result.insert(0, "<p>Offline crack time at 1 billion guesses per second: {}</p>".format(timeToString(totalCost // 1000000000)))
-
-    print '<br>\n'.join(result)
-    return '<br>\n'.join(result)
+    return result
 
 if __name__ == "__main__":
     profile = 0
-    randomPassword = 1
+    randomPassword = 0
     pw = "qwerbunchasdfsmall"
     pw = "correcthorsebattery"
     pw = "((!11!No!5))01/49"
@@ -190,15 +199,16 @@ if __name__ == "__main__":
     #pw = "B3taM4le"
     #pw = "$$thing$$"
     #pw = "2009/04/21"
+    pw = "everything and nothing are together at last"
     # Possible bugs from rockyou.txt
     #pw = "kirsygirl23"
     #pw = "ali19-45"
-    pw = "rubenaNDJUanito"
-    pw = "imranskuri"
-    pw = "rheybeth"
-    pw = "brewstabb"
-    pw = "5mona$$$"
-    pw = "tuktik2517"
+    #pw = "rubenaNDJUanito"
+    #pw = "imranskuri"
+    #pw = "rheybeth"
+    #pw = "brewstabb"
+    #pw = "5mona$$$"
+    #pw = "tuktik2517"
 
     if randomPassword:
         import os, random

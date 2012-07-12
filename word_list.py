@@ -13,8 +13,8 @@ import cProfile
 searchMemo = {}
 
 type = ['letter','digit','letterapostrophe','combined']
-wordPath = "words"
-workPath = os.path.join("words", "work")
+wordPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "words")
+workPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "words", "work")
 
 # Defines the order in which wordlists are searched - used for convertFiles only
 wordsOrder = [
