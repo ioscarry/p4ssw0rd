@@ -48,8 +48,36 @@ Numbers and symbols added to 8 char                             * 9900000000000 
 """
 
 mutations = {
-
+    """Costs of all mutations."""
+    "caseFirst":    1,
+    "upper":        2,
+    "single":       6,
+    "case":         32,
+    "leetSingle":   6,
+    "leet":         32,
+    "delimiter":    20,
+    "swapOne":      6,
+    "swapMulti":    36,
+    "missingOne":   6,
+    "missingMulti": 36,
+    "dupeOne":      6,
+    "dupeMulti":    36,
 }
 
 append = {
+    "symbolSingleCommon":       10,
+    "symbolSingleUncommon":     22,
+    "number11to9999":           40,
+    "numberRun":                50,
+    "dateY":                    75,
+    "number0-99":               110,
+    "symbol2to3Common":         30,
+    "symbol2to3Uncommon":       66,
+    "borderRepeatCommon1to3":   30,
+    "borderRepeatUncommon1to3": 66,
+    "dateYM":                   37800,
+    "dateYMD":                  1613250,
+    "numbers3to6":              1111000,
+    "numbers7to8":              110000000,
+    "numbersSymbols1to8":       9900000000000,
 }

@@ -1,4 +1,5 @@
 import word_list
 
 def cleanup():
-    word_list.closeFiles()
+    #word_list.closeFiles()
+    pass

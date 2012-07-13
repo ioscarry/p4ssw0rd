@@ -160,7 +160,7 @@ def openFiles():
         fn["handle"] = open(os.path.join(wordPath, fn["name"]), "r")
 
 def closeFiles():
-    for fn in wordFiles:
+    for fn in wordFiles.values():
         fn["handle"].close()
 
 def searchDictionary(word):

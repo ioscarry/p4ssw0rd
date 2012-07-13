@@ -158,7 +158,19 @@ class Analysis(object):
     def addPart(self, part):
         self.parts.append(part)
 
-def main(pw):
+def main(pw=None, randomPassword=False):
+    if randomPassword:
+        import os, random
+        passwordFile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "words", "work", "rockyou.txt")
+        f = open(passwordFile, "r")
+        size = os.stat(passwordFile).st_size
+        f.seek(random.randint(0, size))
+        f.readline()
+        pw = f.readline().rstrip("\r\n")
+        f.close()
+    elif not pw:
+        return None
+
     pw = str(pw)
     timeStart = time.time()
     pc = PassCheck(pw)
@@ -212,15 +224,7 @@ if __name__ == "__main__":
     pw = "ffffffffffffffff"
 
     if randomPassword:
-        import os, random
-        passwordFile = os.path.join("words", "work", "rockyou.txt")
-        f = open(passwordFile)
-        size = os.stat(passwordFile).st_size
-        f.seek(random.randint(0, size))
-        f.readline()
-        pw = f.readline().rstrip("\r\n")
-        f.close()
-
+        result = main(randomPassword=True)
     if profile:
         command = 'main(pw)'
         cProfile.runctx(
