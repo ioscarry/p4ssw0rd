@@ -130,8 +130,8 @@ class Password(object):
             word = list(word)
             for i in replaced[::-1]:
                 del word[i]
-            return ''.join(word), replaced
-        return word, []
+            return ''.join(word), Mutation('delimiter', replaced)
+        return word, None
 
 
     def removeLeet(self, word):
@@ -415,7 +415,7 @@ class Password(object):
                         sub         = word[start:index+1],
                         type        = 'repetition',
                         mutations   = mutations,
-                        cost        = self.charCost(char))
+                        cost        = self.charCost(word))
                 caseIndex = []
                 start = index + 1
                 run = 1

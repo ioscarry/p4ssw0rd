@@ -167,10 +167,14 @@ class PassCheck(object):
             elif pattern == "suffix":
                 suffixCount += 1
                 cost *= part.finalCost * suffixCount
-            elif pattern.startswith("border"):
+            elif pattern == ("border-repeat"):
                 if borderCount:
                     continue
                 cost *= part.finalCost
+            elif pattern == ("border-mirror"):
+                if borderCount:
+                    continue
+                cost *= part.finalCost * 2
             elif pattern == "word-repeat":
                 if repeatCount:
                     cost *= 2
@@ -264,6 +268,7 @@ if __name__ == "__main__":
     #pw = "5mona$$$"
     #pw = "tuktik2517"
     #pw = "ffffffffffffffff"
+    pw = "-p-a-s-s-w-o-r-d-$$$$2008-02"
 
     if randomPassword:
         result = main(randomPassword=True)
