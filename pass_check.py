@@ -193,7 +193,7 @@ def main(pw=None, randomPassword=False):
 
 if __name__ == "__main__":
     profile = 0
-    randomPassword = 0
+    randomPassword = 1
     pw = "qwerbunchasdfsmall"
     pw = "correcthorsebattery"
     pw = "((!11!No!5))01/49"
@@ -228,6 +228,8 @@ if __name__ == "__main__":
 
     if randomPassword:
         result = main(randomPassword=True)
+    else:
+        result = main(pw)
     if profile:
         command = 'main(pw)'
         cProfile.runctx(
@@ -236,7 +238,6 @@ if __name__ == "__main__":
         p.sort_stats('cum')
         p.print_stats(1)
     else:
-        result = main(pw)
         print "Word: {}".format(result.word)
         print "Time: {}".format(result.time)
         print "Cost: {}".format(result.cost)
