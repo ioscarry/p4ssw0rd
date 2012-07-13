@@ -130,9 +130,7 @@ def indexFiles():
         f.close()
 
         # Letter indexing
-        letterIndex = {}
         stack = []
-        lastPos = 0
 
         letterIndex = {}
         for letter in sorted(string.printable):
@@ -152,7 +150,7 @@ def indexFiles():
                 element.append(0)
 
         letterIndex = {k: tuple(v) for k, v in letterIndex.items()}
-        fIndex.write('{}:{{"name":"{}", "handle":None, "letterIndex":{}}},\n'.format(
+        fIndex.write('\t{}:{{"name":"{}", "handle":None, "letterIndex":{}}},\n'.format(
             fn.split(".")[0], fn, letterIndex))
     fIndex.write("}")
     fIndex.close()
