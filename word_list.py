@@ -157,7 +157,7 @@ def indexFiles():
 
 def openFiles():
     for fn in wordFiles.values():
-        fn["handle"] = open(os.path.join("words", fn["name"]), "r")
+        fn["handle"] = open(os.path.join(wordPath, fn["name"]), "r")
 
 def closeFiles():
     for fn in wordFiles:
