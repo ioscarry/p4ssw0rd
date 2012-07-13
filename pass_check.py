@@ -133,6 +133,15 @@ class PassCheck(object):
                     if not patterns[end]:
                         patterns[end] = "border-mirror"
 
+        # If there are no patterns, attempt to find the "base" - word or date
+        if not any(patterns):
+            for index in range(0, len(typeMap)):
+                if typeMap[index] in "wd":
+                    patterns[index] = "base"
+                    break
+            else:
+                patterns[0] = "base"
+
         for index in range(0, len(parts)):
             if patterns[index]:
                 break
@@ -144,9 +153,38 @@ class PassCheck(object):
             else:
                 patterns[index] = 'suffix'
 
+        # TODO: Derive cost based on number of combinations and prefix/suffix
         cost = 1
+        prefixCount = 0
+        suffixCount = 0
+        borderCount = 0
+        repeatCount = 0
+        combinations = []
         for pattern, part in itertools.izip(patterns, parts):
-            cost *= part.finalCost
+            if pattern == "prefix":
+                prefixCount += 1
+                cost *= part.finalCost * prefixCount
+            elif pattern == "suffix":
+                suffixCount += 1
+                cost *= part.finalCost * suffixCount
+            elif pattern.startswith("border"):
+                if borderCount:
+                    continue
+                cost *= part.finalCost
+            elif pattern == "word-repeat":
+                if repeatCount:
+                    cost *= 2
+                cost *= part.finalCost
+            elif pattern == "word-combination":
+                combinations.append(part.cost)
+                cost *= part.mutationCost
+            else:
+                cost *= part.finalCost
+        if combinations:
+            if max(combinations) < 20000:
+                cost *= 20000 ** len(combinations)
+            else:
+                cost *= max(combinations) ** len(combinations)
         return patterns, cost
 
 class Analysis(object):
@@ -195,8 +233,8 @@ if __name__ == "__main__":
     profile = 0
     randomPassword = 0
     pw = "qwerbunchasdfsmall"
-    pw = "correcthorsebattery"
-    pw = "((!11!No!5))01/49"
+    #pw = "correcthorsebatterystaple"
+    #pw = "((!11!No!5))01/49"
     #pw = "This is a long, but terrible passphrase."
     #pw = "22200" # 2/22/00?
     #pw = "10/23/99"
@@ -210,7 +248,8 @@ if __name__ == "__main__":
     #pw = "$$money$$"
     #pw = "!!andtammytammy!!"
     #pw = "--word&second--"
-    #pw = "$$money"
+    #pw = "money!!"
+    #pw = "2008-04-09tim"
     #pw = "B3taM4le"
     #pw = "$$thing$$"
     #pw = "2009/04/21"

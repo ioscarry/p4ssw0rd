@@ -33,7 +33,14 @@ class Part(object):
             multi *= mutation.cost
         return self.cost * multi
 
+    def _getMutationCost(self):
+        multi = 1
+        for mutation in self.mutations:
+            multi *= mutation.cost
+        return multi
+
     finalCost = property(_getFinalCost)
+    mutationCost = property(_getMutationCost)
 
 class Mutation(object):
     def __init__(self, type, index):
