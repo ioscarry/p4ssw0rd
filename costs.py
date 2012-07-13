@@ -100,6 +100,24 @@ append = {
     "numbersSymbols1to8":       9900000000000,
 }
 
+append = {
+    "symbolOneCommon": 10,
+    "symbolOneUncommon": 32,
+    "borderRepeatCommon1to3": 62,
+    "symbol2to3Common": 92,
+    "number11to9999": 132,
+    "numberRun": 182,
+    "borderRepeatUncommon1to3": 248,
+    "symbol2to3Uncommon": 314,
+    "dateY": 389,
+    "number0-99": 499,
+    "dateYM": 38299,
+    "numbers3to6": 1149299,
+    "dateYMD": 2762549,
+    "numbers7to8": 112762549,
+    "numbersSymbols1to8": 9900112762549,
+}
+
 if __name__ == "__main__":
     maxValue = 0
     print "mutations = {"
@@ -108,9 +126,9 @@ if __name__ == "__main__":
         print '\t"{}": {},'.format(key, maxValue)
     print "}"
 
-#    maxValue = 0
-#    print "append = {"
-#    for key, value in sorted(append.iteritems(), key=lambda(k, v): (v, k)):
-#        maxValue += value
-#        print '\t"{}": {},'.format(key, maxValue)
-#    print "}"
+    maxValue = 0
+    print "append = {"
+    for key, value in sorted(append.iteritems(), key=lambda(k, v): (v, k)):
+        maxValue += value
+        print '\t"{}": {},'.format(key, maxValue)
+    print "}"

@@ -454,17 +454,23 @@ class Password(object):
         word = part.word
         if re.search(r"[^0-9a-zA-Z._!-@*#/$&]", word):
             charset = 94
+            type = 'bruteforce'
         elif re.search(r"[^0-9a-zA-Z]", word):
             charset = 72
+            type = 'bruteforce'
         elif re.search(r"^[A-Z]+$", word):
             charset = 26
+            type = 'bruteforce'
         elif re.search(r"^[a-z]+$", word):
             charset = 26
+            type = 'bruteforce-lowercase'
         elif re.search(r"^[0-9]+$", word):
             charset = 10
+            type = 'bruteforce-digits'
         else:
             charset = 52
-        self.addQueue(part, '', '', word, 'bruteforce', [], charset ** len(word))
+            type = 'bruteforce'
+        self.addQueue(part, '', '', word, type, [], charset ** len(word))
 
 if __name__ == "__main__":
 #    pw = Password("hi2")

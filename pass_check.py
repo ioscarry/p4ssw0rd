@@ -161,12 +161,27 @@ class PassCheck(object):
         repeatCount = 0
         combinations = []
         for pattern, part in itertools.izip(patterns, parts):
+            # TODO: Replace with generalized cases, pull from costs
             if pattern == "prefix":
+                if type == "bruteforce-digits":
+                    cost *= part.finalCost * 2**prefixCount * 499
+                elif type == "bruteforce-lowercase":
+                    cost *= part.finalCost * 2**prefixCount * 1149299
+                elif type == "bruteforce":
+                    cost *= part.finalCost * 2**prefixCount * 2762549
+                else:
+                    cost *= part.finalCost * 2**prefixCount
                 prefixCount += 1
-                cost *= part.finalCost * prefixCount
             elif pattern == "suffix":
+                if type == "bruteforce-digits":
+                    cost *= part.finalCost * 2**suffixCount * 499
+                elif type == "bruteforce-lowercase":
+                    cost *= part.finalCost * 2**suffixCount * 1149299
+                elif type == "bruteforce":
+                    cost *= part.finalCost * 2**suffixCount * 2762549
+                else:
+                    cost *= part.finalCost * 2**suffixCount
                 suffixCount += 1
-                cost *= part.finalCost * suffixCount
             elif pattern == ("border-repeat"):
                 if borderCount:
                     continue
@@ -237,6 +252,7 @@ if __name__ == "__main__":
     profile = 0
     randomPassword = 0
     pw = "qwerbunchasdfsmall"
+    pw = "supercasy1"
     #pw = "correcthorsebatterystaple"
     #pw = "((!11!No!5))01/49"
     #pw = "This is a long, but terrible passphrase."
@@ -267,8 +283,11 @@ if __name__ == "__main__":
     #pw = "brewstabb"
     #pw = "5mona$$$"
     #pw = "tuktik2517"
+    pw = "342008"           # Not picked up as date
     #pw = "ffffffffffffffff"
-    pw = "-p-a-s-s-w-o-r-d-$$$$2008-02"
+    #pw = "-p-a-s-s-w-o-r-d-$$$$2008-02"
+    pw = "buddha342008"
+
 
     if randomPassword:
         result = main(randomPassword=True)
