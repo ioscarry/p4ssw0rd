@@ -1,6 +1,7 @@
 #!/usr/local/bin/python2.7
 import re, itertools, time
 import cProfile, pstats
+import cleanup
 from password import Password
 from time_to_string import timeToString
 
@@ -185,6 +186,8 @@ def main(pw=None, randomPassword=False):
         totalCost *= part.finalCost
         result.addPart(part)
     result.cost = timeToString(totalCost // 1000000000)
+
+    cleanup.cleanup()
 
     return result
 
