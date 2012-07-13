@@ -172,7 +172,7 @@ def main(pw):
     for part in parts:
         totalCost *= part.finalCost
         result.addPart(part)
-    result.totalCost = timeToString(totalCost // 1000000000)
+    result.cost = timeToString(totalCost // 1000000000)
 
     return result
 
@@ -209,6 +209,7 @@ if __name__ == "__main__":
     #pw = "brewstabb"
     #pw = "5mona$$$"
     #pw = "tuktik2517"
+    pw = "ffffffffffffffff"
 
     if randomPassword:
         import os, random
@@ -228,4 +229,14 @@ if __name__ == "__main__":
         p.sort_stats('cum')
         p.print_stats(1)
     else:
-        main(pw)
+        result = main(pw)
+        print "Word: {}".format(result.word)
+        print "Time: {}".format(result.time)
+        print "Cost: {}".format(result.cost)
+        for part in result.parts:
+            print "Part: '{}'".format(part.word)
+            print "\tType: {}".format(part.type)
+            print "\tMutations: {}".format(part.mutations)
+            print "\tPattern: {}".format(part.pattern)
+            print "\tCost: {}".format(part.cost)
+            print "\tTotal Cost: {}".format(part.finalCost)
