@@ -193,12 +193,12 @@ def main(pw=None, randomPassword=False):
 
 if __name__ == "__main__":
     profile = 0
-    randomPassword = 1
+    randomPassword = 0
     pw = "qwerbunchasdfsmall"
     pw = "correcthorsebattery"
     pw = "((!11!No!5))01/49"
-    pw = "This is a long, but terrible passphrase."
-    pw = "22200" # 2/22/00?
+    #pw = "This is a long, but terrible passphrase."
+    #pw = "22200" # 2/22/00?
     #pw = "10/23/99"
     #pw = "123qweasdzxc"
     #pw = "08-31-2004"
@@ -214,7 +214,7 @@ if __name__ == "__main__":
     #pw = "B3taM4le"
     #pw = "$$thing$$"
     #pw = "2009/04/21"
-    pw = "everything and nothing are together at last"
+    #pw = "everything and nothing are together at last"
     # Possible bugs from rockyou.txt
     #pw = "kirsygirl23"
     #pw = "ali19-45"
@@ -224,7 +224,7 @@ if __name__ == "__main__":
     #pw = "brewstabb"
     #pw = "5mona$$$"
     #pw = "tuktik2517"
-    pw = "ffffffffffffffff"
+    #pw = "ffffffffffffffff"
 
     if randomPassword:
         result = main(randomPassword=True)

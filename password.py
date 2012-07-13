@@ -1,6 +1,6 @@
 #!/usr/local/bin/python2.7
 import copy, re, string
-import word_list, key_graph
+import word_list, key_graph, costs
 from collections import deque
 
 class Part(object):
@@ -44,23 +44,9 @@ class Mutation(object):
         return "{}: {}".format(self.type, self.index)
 
     def _getCost(self):
-        if self.type == "case":
-            if self.index == "[0]":
-                return 2
-            else:
-                return len(self.index)
-        if self.type == "upper":
-            return 3
-        if self.type == "leet":
-            return 32
-        if self.type == "delimiter":
-            return 128
-        if self.type in ("charSwap", "charDupe", "charRemove"):
-            if len(self.index) == 1:
-                return self.index[0]
-            else:
-                return len(self.index) * 8
-        return 1
+        if self.type in costs.mutations:
+            return costs.mutations[self.type]
+        raise KeyError("no mutation cost found for type: {}".format(self.type))
 
     cost = property(_getCost)
 
@@ -125,7 +111,7 @@ class Password(object):
         elif word[1] in symbols:
             start = 1
         else:
-            return replaced, word
+            return word, replaced
         for i in range(start, len(word), 2):
             if word[i] == word[start]:
                 count += 1
@@ -137,8 +123,8 @@ class Password(object):
             word = list(word)
             for i in replaced[::-1]:
                 del word[i]
-            return replaced, ''.join(word)
-        return [], word
+            return ''.join(word), replaced
+        return word, []
 
 
     def removeLeet(self, word):
@@ -169,14 +155,32 @@ class Password(object):
             for resultSub in result:
                 resultSub.append(char)
 
+        if not replaced:
+            mutation = None
+        elif len(replaced) == 1:
+            mutation = Mutation('leetOne', replaced)
+        else:
+            mutation = Mutation('leetMulti', replaced)
         for temp in result:
-            yield replaced, ''.join(temp)
+            yield ''.join(temp), mutation
 
     def removeCase(self, word):
         """Returns an index of all uppercase letters, and the word in
         lowercase."""
         replaced = [index for index, char in enumerate(word) if char.isupper()]
-        return replaced, word.lower()
+        length = len(replaced)
+
+        if not length:
+            return word, False
+        if length == len(word):
+            mutation = Mutation('caseUpper', replaced)
+        elif replaced == [0]:
+            mutation = Mutation('caseFirst', replaced)
+        elif length == 1:
+            mutation = Mutation('caseOne', replaced)
+        else:
+            mutation = Mutation('caseMulti', replaced)
+        return word.lower(), mutation
 
 #    def checkMemo(self, part):
 #        if part.word in self.queueMemo:
@@ -198,27 +202,27 @@ class Password(object):
             word, minLength=minLength,
             start=start):
             mutations = []
-            replaced, sub = self.removeDelimiter(sub)
-            if replaced:
-                mutations.append(Mutation('delimiter', replaced))
+            sub, mutation = self.removeDelimiter(sub)
+            if mutation:
+                mutations.append(mutation)
 
-            replaced, sub = self.removeCase(sub)
-            if replaced and len(replaced) == len(sub):
-                mutations.append((Mutation('upper', replaced)))
-            elif replaced:
-                mutations.append((Mutation('case', replaced)))
+            sub, mutation = self.removeCase(sub)
+            if mutation:
+                mutations.append(mutation)
 
-            for replaced, subUnLeet in self.removeLeet(sub):
+            # TODO: Bug: Mutations may stack on top of each other once
+            # multiple leet possibilities are in
+            for subUnLeet, mutation in self.removeLeet(sub):
                 cost = word_list.searchDictionary(subUnLeet)
                 if cost:
-                    if replaced:
-                        mutations.append(Mutation('leet', replaced))
+                    if mutation:
+                        mutations.append(mutation)
                         # Replace part, indicate that it is a word
                     self.addQueue(
                         part, prefix, suffix, subUnLeet, "word", mutations, cost)
                     if returnFirst:
                         return
-                elif replaced:
+                elif mutation:
                     # Need to also check un-leeted word against special-
                     # character wordlists
                     cost = word_list.searchDictionary(sub)
