@@ -167,7 +167,7 @@ def main(pw=None, randomPassword=False):
         size = os.stat(passwordFile).st_size
         f.seek(random.randint(0, size))
         f.readline()
-        pw = f.readline().rstrip("\r\n")
+        pw = str(f.readline().rstrip("\r\n"))
         f.close()
     elif not pw:
         return None
