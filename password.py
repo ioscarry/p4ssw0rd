@@ -1,5 +1,5 @@
 #!/usr/local/bin/python2.7
-import copy, re, string, sqlite3
+import copy, re, string, sqlite3, os
 import key_graph, costs
 from collections import deque
 
@@ -8,7 +8,9 @@ class DBWords(object):
         self.c = None
 
     def connect(self):
-        conn = sqlite3.connect('wordlist.db')
+        conn = sqlite3.connect(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "wordlist.db"))
         self.c = conn.cursor()
 
     def query(self, value):

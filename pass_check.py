@@ -219,7 +219,7 @@ class Analysis(object):
 def main(pw=None, randomPassword=False):
     if randomPassword:
         import os, random
-        passwordFile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "words", "work", "rockyou.txt")
+        passwordFile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "rockyou.txt")
         f = open(passwordFile, "r")
         size = os.stat(passwordFile).st_size
         f.seek(random.randint(0, size))
