@@ -1,7 +1,23 @@
 #!/usr/local/bin/python2.7
-import copy, re, string
+import copy, re, string, sqlite3
 import word_list, key_graph, costs
 from collections import deque
+
+class DBWords(object):
+    def __init__(self):
+        self.c = None
+
+    def connect(self):
+        conn = sqlite3.connect('wordlist.db')
+        self.c = conn.cursor()
+
+    def query(self, value):
+        if not self.c:
+            self.connect()
+        result = self.c.execute(
+            'SELECT location FROM words WHERE word=? LIMIT 1', (value,))
+        print result.fetchone()
+        return result.fetchone()
 
 class Part(object):
     def __init__(self, word, type=None, mutations=None, cost=1, pattern=None,
@@ -85,6 +101,7 @@ class Password(object):
         self.root = root
         self.queue = []
         self.queueMemo = {}
+        self.db = DBWords()
 
     def subPermutations(self, word, start=0, minLength=4):
         """Generates all possible substrings, from longest to shortest."""
@@ -200,6 +217,14 @@ class Password(object):
 #            self.queueMemo[part.word] = []
 #        return False
 
+    def searchDictionary(self, word):
+        # Open files if necessary
+        location = self.db.query(word)
+        if location:
+            return location
+        return False
+
+
     def findWord(self, part, minLength=4, start=0, returnFirst=False):
         """Removes and saves mutations, then attempts to find the largest
         dictionary word (larger than minLength characters) within the given part
@@ -220,7 +245,7 @@ class Password(object):
             # TODO: Bug: Mutations may stack on top of each other once
             # multiple leet possibilities are in
             for subUnLeet, mutation in self.removeLeet(sub):
-                cost = word_list.searchDictionary(subUnLeet)
+                cost = self.searchDictionary(subUnLeet)
                 if cost:
                     if mutation:
                         mutations.append(mutation)
@@ -232,7 +257,7 @@ class Password(object):
                 elif mutation:
                     # Need to also check un-leeted word against special-
                     # character wordlists
-                    cost = word_list.searchDictionary(sub)
+                    cost = self.searchDictionary(sub)
                     if cost:
                         self.addQueue(
                             part, prefix, suffix, sub, "word", mutations, cost)

@@ -286,7 +286,8 @@ if __name__ == "__main__":
     pw = "342008"           # Not picked up as date
     #pw = "ffffffffffffffff"
     #pw = "-p-a-s-s-w-o-r-d-$$$$2008-02"
-    pw = "buddha342008"
+    pw = "smile4420"
+    pw = "RidgitFerret45!"
 
 
     if randomPassword:
