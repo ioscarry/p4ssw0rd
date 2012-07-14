@@ -1,6 +1,6 @@
 #!/usr/local/bin/python2.7
 import copy, re, string, sqlite3
-import word_list, key_graph, costs
+import key_graph, costs
 from collections import deque
 
 class DBWords(object):
@@ -16,8 +16,9 @@ class DBWords(object):
             self.connect()
         result = self.c.execute(
             'SELECT location FROM words WHERE word=? LIMIT 1', (value,))
-        print result.fetchone()
-        return result.fetchone()
+        result = result.fetchone()
+        if result:
+            return result[0]
 
 class Part(object):
     def __init__(self, word, type=None, mutations=None, cost=1, pattern=None,
@@ -393,9 +394,6 @@ class Password(object):
                 (type, cost) = self.isDate(places[0], places[1], places[2])
                 if not type:
                     continue
-#                print sub
-#                print places
-#                print type
                 self.addQueue(part, prefix, suffix, sub, type, cost=cost)
                 if returnFirst:
                     return

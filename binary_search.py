@@ -1,5 +1,7 @@
 """General-purpose binary search for in sorted files, with custom low and high
-locations (for first-character indexed files)."""
+locations (for first-character indexed files).
+
+Not currently used after switch to database."""
 
 import os
 import cProfile

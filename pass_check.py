@@ -250,7 +250,7 @@ def main(pw=None, randomPassword=False):
 
 if __name__ == "__main__":
     profile = 0
-    randomPassword = 0
+    randomPassword = 1
     pw = "qwerbunchasdfsmall"
     pw = "supercasy1"
     #pw = "correcthorsebatterystaple"
