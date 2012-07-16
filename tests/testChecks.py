@@ -1,223 +1,240 @@
 import unittest
-import pass_check
+import pass_check, password
+
+class TestMain(unittest.TestCase):
+    def testAnalysis(self):
+        """Test that main() runs and returns the correct analysis object."""
+        result = pass_check.main("0000000000")
+        self.assertEqual(result.word, "0000000000")
+        self.assertGreater(result.cost, 1)
+        self.assertEqual(result.parts[0].word, "0000000000")
+        self.assertEqual(result.parts[0].type, "repetition")
+        self.assertGreater(result.time, 0)
+
+    def testPatternWordRepeat(self):
+        """Test that repeated words are identified."""
+        result = pass_check.main("timertimer")
+        self.assertGreater(result.cost, 1)
+        self.assertEqual(result.parts[0].word, "timer")
+        self.assertEqual(result.parts[0].pattern, "word-repeat")
+        self.assertEqual(result.parts[1].word, "timer")
+        self.assertEqual(result.parts[1].pattern, "word-repeat")
+
+    def testPatternWordCombination(self):
+        """Test that combinations of words are identified."""
+        result = pass_check.main("wordthreat")
+        self.assertGreater(result.cost, 1)
+        self.assertEqual(result.parts[0].word, "word")
+        self.assertEqual(result.parts[0].pattern, "word-combination")
+        self.assertEqual(result.parts[1].word, "threat")
+        self.assertEqual(result.parts[1].pattern, "word-combination")
+
+
+    def testPatternWordCombinationDelimiter(self):
+        """Test that two words with a single delimiter are identified."""
+        result = pass_check.main("money$dollars")
+        self.assertGreater(result.cost, 1)
+        self.assertEqual(result.parts[0].word, "money")
+        self.assertEqual(result.parts[0].pattern, "word-combination")
+        self.assertEqual(result.parts[1].word, "$")
+        self.assertEqual(result.parts[1].pattern, "word-combination-delimiter")
+        self.assertEqual(result.parts[2].word, "dollars")
+        self.assertEqual(result.parts[2].pattern, "word-combination")
+
+    def testPatternBorderRepeat(self):
+        """Test that a repeated border is identified: !!example!!"""
+        result = pass_check.main("!!borders!!")
+        self.assertGreater(result.cost, 1)
+        self.assertEqual(result.parts[0].word, "!!")
+        self.assertEqual(result.parts[0].pattern, "border-repeat")
+        self.assertEqual(result.parts[1].word, "borders")
+        self.assertEqual(result.parts[1].pattern, None)
+        self.assertEqual(result.parts[2].word, "!!")
+        self.assertEqual(result.parts[2].pattern, "border-repeat")
+
+    def testPatternBorderMirror(self):
+        """Test that a mirrored border is identified: ((example))"""
+        result = pass_check.main("((mirrors))")
+        self.assertGreater(result.cost, 1)
+        self.assertEqual(result.parts[0].word, "((")
+        self.assertEqual(result.parts[0].pattern, "border-mirror")
+        self.assertEqual(result.parts[1].word, "mirrors")
+        self.assertEqual(result.parts[1].pattern, None)
+        self.assertEqual(result.parts[2].word, "))")
+        self.assertEqual(result.parts[2].pattern, "border-mirror")
 
 class TestFind(unittest.TestCase):
-    def testFindDate(self):
-        pw = pass_check.Password("2008-03-30")
-        pw.findDate(pw.root.next[0])
-        #self.assertEqual(pw.parts)
+    def getNext(self, method, password):
+        """Returns the first password part found when using the specified method
+        for the object Password(password)."""
+        pw = pass_check.Password(password)
+        method = getattr(pw, method)
+        method(pw.root.next[0])
+        pw.addParts()
+        return pw.root.next[0]
 
     def testFindWord(self):
-        pw = pass_check.Password("illinois")
-        pw.findWord(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+        node = self.getNext("findWord", "illinois")
         self.assertEqual(node.word, "illinois")
         self.assertEqual(node.type, "word")
         self.assertEqual(node.mutations, [])
 
-    def testFindWordLeet(self):
-        pw = pass_check.Password("t3rr!fy")
-        pw.findWord(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+    def testFindWordLeetMulti(self):
+        node = self.getNext("findWord", "t3rr!fy")
         self.assertEqual(node.word, "terrify")
         self.assertEqual(node.type, "word")
-        self.assertEqual(node.mutations[0].type, "leet")
+        self.assertEqual(node.mutations[0].type, "leetMulti")
         self.assertEqual(node.mutations[0].index, [1, 4])
 
-    def testFindWordCap(self):
-        pw = pass_check.Password("rOBert")
-        pw.findWord(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+    def testFindWordCapMulti(self):
+        node = self.getNext("findWord", "rOBert")
         self.assertEqual(node.word, "robert")
         self.assertEqual(node.type, "word")
-        self.assertEqual(node.mutations[0].type, "case")
+        self.assertEqual(node.mutations[0].type, "caseMulti")
         self.assertEqual(node.mutations[0].index, [1, 2])
 
-    def testFindWordCapLeet(self):
-        pw = pass_check.Password("T3l3gr4PH")
-        pw.findWord(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+    def testFindWordCapMultiLeetMulti(self):
+        node = self.getNext("findWord", "T3l3gr4PH")
         self.assertEqual(node.word, "telegraph")
         self.assertEqual(node.type, "word")
-        self.assertEqual(node.mutations[0].type, "case")
+        self.assertEqual(node.mutations[0].type, "caseMulti")
         self.assertEqual(node.mutations[0].index, [0, 7, 8])
-        self.assertEqual(node.mutations[1].type, "leet")
+        self.assertEqual(node.mutations[1].type, "leetMulti")
         self.assertEqual(node.mutations[1].index, [1, 3, 6])
 
     def testFindDatePart(self):
-        pw = pass_check.Password("102399842")
-        pw.findDate(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+        node = self.getNext("findDate", "102399842")
         self.assertEqual(node.word, "102399")
         self.assertEqual(node.type, "date")
         self.assertEqual(node.mutations, [])
 
     def testFindDateYMD(self):
-        pw = pass_check.Password("2009/04/21")
-        pw.findDate(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+        node = self.getNext("findDate", "2009/04/21")
         self.assertEqual(node.word, "2009/04/21")
         self.assertEqual(node.type, "date")
         self.assertEqual(node.mutations, [])
 
     def testFindDateYM(self):
-        pw = pass_check.Password("200809")
-        pw.findDate(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+        node = self.getNext("findDate", "200809")
         self.assertEqual(node.word, "200809")
         self.assertEqual(node.type, "date")
         self.assertEqual(node.mutations, [])
 
     def testFindDateMD(self):
-        pw = pass_check.Password("01.20")
-        pw.findDate(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+        node = self.getNext("findDate", "01.20")
         self.assertEqual(node.word, "01.20")
         self.assertEqual(node.type, "date")
         self.assertEqual(node.mutations, [])
 
     def testFindDateY(self):
-        pw = pass_check.Password("1949")
-        pw.findDate(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+        node = self.getNext("findDate", "1949")
         self.assertEqual(node.word, "1949")
         self.assertEqual(node.type, "date")
         self.assertEqual(node.mutations, [])
 
     def testFindDateFail(self):
-        pw = pass_check.Password("1900")
-        pw.findDate(pw.root.next[0])
+        node = self.getNext("findDate", "1900")
+        self.assertNotEqual(node.type, "date")
 
     def testFindRepeated(self):
-        pw = pass_check.Password("twolllllllthree")
-        pw.findRepeated(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+        node = self.getNext("findRepeated", "twolllllllthree")
         self.assertEqual(node.word, "two")
         self.assertEqual(node.next[0].word, "lllllll")
 
-    def testBinarySearch(self):
-        # First entry in 9.dic
-        pw = pass_check.Password("123123123")
-        pw.findWord(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
-        self.assertEqual(node.word, "123123123")
-        self.assertEqual(node.type, "word")
-        self.assertEqual(node.mutations, [])
-        # Last entry in 7.dic
-        pw = pass_check.Password("zyzzyva")
-        pw.findWord(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
-        self.assertEqual(node.word, "zyzzyva")
-        self.assertEqual(node.type, "word")
-        self.assertEqual(node.mutations, [])
-        # Middle entry in 14.dic
-        pw = pass_check.Password("irrecognizable")
-        pw.findWord(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
-        self.assertEqual(node.word, "irrecognizable")
-        self.assertEqual(node.type, "word")
-        self.assertEqual(node.mutations, [])
+    def testFindEmail(self):
+        node = self.getNext("findEmail", "dsapwqa.320@iatz.net")
+        self.assertEqual(node.word, "dsapwqa.320@iatz.net")
+        self.assertEqual(node.type, "email")
 
-class TestRemove(unittest.TestCase):
-    def testRemoveCase(self):
-        pw = pass_check.Password("aAaAaaAAaAA")
-        self.assertEqual(pw.removeCase(
-            pw.root.next[0].word), ([1, 3, 6, 7, 9, 10], "aaaaaaaaaaa"))
-
-        pw = pass_check.Password("34a90ReElo@A")
-        self.assertEqual(pw.removeCase(
-            pw.root.next[0].word), ([5, 7, 11], "34a90reelo@a"))
-
-    def testRemoveLeet(self):
-        pw = pass_check.Password("0mg")
-        for i in pw.removeLeet(pw.root.next[0].word):
-            self.assertEqual(i, ([0], "omg"))
-        pw = pass_check.Password("!ll!n0i5")
-        for i in pw.removeLeet(pw.root.next[0].word):
-            self.assertEqual(i, ([0,3,5,7], "illinois"))
-        pw = pass_check.Password("0mg")
-
-    def testRemoveDelimiter(self):
-        pw = pass_check.Password("p-a-s-s-w-o-r-d")
-        self.assertEqual(pw.removeDelimiter(
-            pw.root.next[0].word), ([1,3,5,7,9,11,13], "password"))
-        pw = pass_check.Password("-l-i-s-a-")
-        self.assertEqual(pw.removeDelimiter(
-            pw.root.next[0].word), ([0,2,4,6,8], "lisa"))
-        pw = pass_check.Password(".n.o.t.g.o.o.d2008")
-        self.assertEqual(pw.removeDelimiter(
-            pw.root.next[0].word), ([0,2,4,6,8,10,12], "notgood2008"))
-        pw = pass_check.Password(" h i m o m")
-        self.assertEqual(pw.removeDelimiter(
-            pw.root.next[0].word), ([0,2,4,6,8], "himom"))
-        pw = pass_check.Password("f_a_il")
-        self.assertEqual(pw.removeDelimiter(
-            pw.root.next[0].word), ([], "f_a_il"))
-
-    def testKeyRun(self):
-        pw = pass_check.Password("sdfghjkl")
-        pw.findKeyRun(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+    def testFindKeyRun(self):
+        node = self.getNext("findKeyRun", "sdfghjkl")
         self.assertEqual(node.word, "sdfghjkl")
         self.assertEqual(node.type, "keyboard")
         self.assertEqual(node.cost, 264)
 
-    def testKeyRunBreaks(self):
-        pw = pass_check.Password("123456qwerty")
-        pw.findKeyRun(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+    def testFindKeyRunBreaks(self):
+        node = self.getNext("findKeyRun", "123456qwerty")
         self.assertEqual(node.word, "123456qwerty")
         self.assertEqual(node.type, "keyboard")
         self.assertEqual(node.cost, 264**2)
 
-    def testBruteForce(self):
-        pw = pass_check.Password("owirudyas")
-        pw.findBruteForce(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+    def testFindBruteForce(self):
+        node = self.getNext("findBruteForce", "owirudyas")
         self.assertEqual(node.word, "owirudyas")
-        self.assertEqual(node.type, "bruteforce")
+        self.assertEqual(node.type, "bruteforce-lowercase")
         self.assertEqual(node.cost, 26 ** 9)
 
-        pw = pass_check.Password("94532")
-        pw.findBruteForce(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+        node = self.getNext("findBruteForce", "94532")
         self.assertEqual(node.word, "94532")
-        self.assertEqual(node.type, "bruteforce")
+        self.assertEqual(node.type, "bruteforce-digits")
         self.assertEqual(node.cost, 10 ** 5)
 
-        pw = pass_check.Password("94$532")
-        pw.findBruteForce(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+        node = self.getNext("findBruteForce", "94$532")
         self.assertEqual(node.word, "94$532")
         self.assertEqual(node.type, "bruteforce")
         self.assertEqual(node.cost, 72 ** 6)
 
-        pw = pass_check.Password("CEPQOSWA")
-        pw.findBruteForce(pw.root.next[0])
-        pw.addParts()
-        node = pw.root.next[0]
+        node = self.getNext("findBruteForce", "CEPQOSWA")
         self.assertEqual(node.word, "CEPQOSWA")
         self.assertEqual(node.type, "bruteforce")
         self.assertEqual(node.cost, 26 ** 8)
 
+class TestRemove(unittest.TestCase):
+    def testRemoveCase(self):
+        pw = pass_check.Password("aAaAaaAAaAA")
+        word, mutation = pw.removeCase(pw.root.next[0].word)
+        self.assertEqual(word, "aaaaaaaaaaa")
+        self.assertEqual(mutation.type, "caseMulti")
+        self.assertEqual(mutation.index, [1, 3, 6, 7, 9, 10])
+
+        pw = pass_check.Password("34a90ReElo@A")
+        word, mutation = pw.removeCase(pw.root.next[0].word)
+        self.assertEqual(word, "34a90reelo@a")
+        self.assertEqual(mutation.type, "caseMulti")
+        self.assertEqual(mutation.index, [5, 7, 11])
+
+    def testRemoveLeet(self):
+        pw = pass_check.Password("0mg")
+        for word, mutation in pw.removeLeet(pw.root.next[0].word):
+            self.assertEqual(word, "omg")
+            self.assertEqual(mutation.type, "leetOne")
+            self.assertEqual(mutation.index, [0])
+
+        pw = pass_check.Password("!ll!n0i5")
+        for word, mutation in pw.removeLeet(pw.root.next[0].word):
+            self.assertEqual(word, "illinois")
+            self.assertEqual(mutation.type, "leetMulti")
+            self.assertEqual(mutation.index, [0,3,5,7])
+
+    def testRemoveDelimiter(self):
+        pw = pass_check.Password("p-a-s-s-w-o-r-d")
+        word, mutation = pw.removeDelimiter(pw.root.next[0].word)
+        self.assertEqual(word, "password")
+        self.assertEqual(mutation.type, "delimiter")
+        self.assertEqual(mutation.index, [1,3,5,7,9,11,13])
+
+        pw = pass_check.Password("-l-i-s-a-")
+        word, mutation = pw.removeDelimiter(pw.root.next[0].word)
+        self.assertEqual(word, "lisa")
+        self.assertEqual(mutation.type, "delimiter")
+        self.assertEqual(mutation.index, [0,2,4,6,8])
+
+        pw = pass_check.Password(".n.o.t.g.o.o.d2008")
+        word, mutation = pw.removeDelimiter(pw.root.next[0].word)
+        self.assertEqual(word, "notgood2008")
+        self.assertEqual(mutation.type, "delimiter")
+        self.assertEqual(mutation.index, [0,2,4,6,8,10,12])
+
+        pw = pass_check.Password(" h i m o m")
+        word, mutation = pw.removeDelimiter(pw.root.next[0].word)
+        self.assertEqual(word, "himom")
+        self.assertEqual(mutation.type, "delimiter")
+        self.assertEqual(mutation.index, [0,2,4,6,8])
+
+        pw = pass_check.Password("f_a_il")
+        word, mutation = pw.removeDelimiter(pw.root.next[0].word)
+        self.assertEqual(word, "f_a_il")
+        self.assertEqual(mutation, None)
 
 class TestOther(unittest.TestCase):
     def testSubPermutations(self):
