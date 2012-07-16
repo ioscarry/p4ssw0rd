@@ -125,7 +125,7 @@ class PassCheck(object):
         result = re.finditer(r"([brd]).+\1", typeMap)
         for match in result:
             start = match.start()
-            for end in range(start, len(parts)):
+            for end in range(start + 1, len(parts)):
                 if parts[start].word == parts[end].word:
                     if not patterns[start]:
                         patterns[start] = "border-repeat"
@@ -251,7 +251,7 @@ def main(pw=None, randomPassword=False):
 
 if __name__ == "__main__":
     profile = 0
-    randomPassword = 1
+    randomPassword = 0
     pw = "qwerbunchasdfsmall"
     pw = "supercasy1"
     #pw = "correcthorsebatterystaple"
@@ -290,6 +290,7 @@ if __name__ == "__main__":
     #pw = "-p-a-s-s-w-o-r-d-$$$$2008-02"
     pw = "smile4420"
     pw = "RidgitFerret45!"
+    pw = "((mirrors))"
 
 
     if randomPassword:
