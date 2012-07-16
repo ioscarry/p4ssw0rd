@@ -1,7 +1,6 @@
 #!/usr/local/bin/python2.7
 import re, itertools, time
 import cProfile, pstats
-import cleanup
 from password import Password
 from time_to_string import timeToString
 
@@ -20,8 +19,8 @@ class PassCheck(object):
         self.password = Password(password)
 
     def findParts(self):
-        """Searches for possible patterns in the given Password object.
-        Returns True if any match is found, False if not."""
+        """Searches for possible patterns in the given Password object, and
+        tells the object to add the new parts."""
         while True:
             for part in self.password.getParts():
                 if part.type:
@@ -55,6 +54,7 @@ class PassCheck(object):
                 break
 
     def reverseParen(self, word):
+        """Returns the matching character for any of '([{<'."""
         word = list(word)
         for i in range(0, len(word)):
             if word[i] in self.parenMatch:
@@ -62,6 +62,8 @@ class PassCheck(object):
         return ''.join(word)
 
     def findLowestCost(self):
+        """Compares the cost of each possible combination, and saves the lowest-
+        cost one."""
         lowestCost = float('inf')
         finalParts = []
         finalPatterns = []
@@ -74,8 +76,11 @@ class PassCheck(object):
         for index, part in enumerate(finalParts):
             part.pattern = finalPatterns[index]
         self.finalParts = finalParts
+        self.finalCost = lowestCost
 
     def compareParts(self, parts, lowestCost):
+        """Searches for known patterns in the given combination of parts, and
+        calculates a cost based on the approximate cost of cracking each one."""
         typeMap = ''.join([part.type[0] for part in parts])
 
         # Parts are shared between combinations - can't modify them!
@@ -89,7 +94,7 @@ class PassCheck(object):
             if parts[start].word == parts[start + 1].word:
                 if not patterns[start]:
                     patterns[start] = "word-repeat"
-                if patterns[start + 1]:
+                if not patterns[start + 1]:
                     patterns[start + 1] = "word-repeat"
 
         # Dictionary-combination(2)
@@ -153,7 +158,6 @@ class PassCheck(object):
             else:
                 patterns[index] = 'suffix'
 
-        # TODO: Derive cost based on number of combinations and prefix/suffix
         cost = 1
         prefixCount = 0
         suffixCount = 0
@@ -207,6 +211,7 @@ class PassCheck(object):
         return patterns, cost
 
 class Analysis(object):
+    """Object which contains the result sent to web template"""
     def __init__(self, word, cost=0, time=0):
         self.word = word
         self.cost = cost
@@ -238,13 +243,9 @@ def main(pw=None, randomPassword=False):
     parts = pc.finalParts
     result = Analysis(pw, time=timeRun)
 
-    totalCost = 1
     for part in parts:
-        totalCost *= part.finalCost
         result.addPart(part)
-    result.cost = timeToString(totalCost // 1000000000)
-
-    cleanup.cleanup()
+    result.cost = timeToString(pc.finalCost // 1000000000)
 
     return result
 
@@ -283,6 +284,7 @@ if __name__ == "__main__":
     #pw = "brewstabb"
     #pw = "5mona$$$"
     #pw = "tuktik2517"
+    pw = "eunuchportraitracisttangent333"           # Long analyze time - 1.2s
     pw = "342008"           # Not picked up as date
     #pw = "ffffffffffffffff"
     #pw = "-p-a-s-s-w-o-r-d-$$$$2008-02"
