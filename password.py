@@ -29,8 +29,6 @@ class Part(object):
     def __init__(self, word, type=None, mutations=None, cost=1, pattern=None,
                  prev=None, next=None):
         if mutations is None: mutations = []
-        if not isinstance(mutations, list):
-            mutations = [mutations]
         if prev is None:
             prev = deque()
         if next is None:
@@ -75,7 +73,6 @@ class Mutation(object):
     def _getCost(self):
         if self.type in costs.mutations:
             return costs.mutations[self.type]
-        raise KeyError("no mutation cost found for type: {}".format(self.type))
 
     cost = property(_getCost)
 
@@ -170,7 +167,7 @@ class Password(object):
         result = [[]]
         replaced = []
         for index, char in enumerate(list(word)):
-            # Special exception for multiple un-leeting choices:
+            # Special exception for l and i substitutions
             if char in self.LEET and len(self.LEET[char]) > 1:
                 result += copy.deepcopy(result)
                 for resultSub in result[:len(result) / 2]:
@@ -414,16 +411,11 @@ class Password(object):
         if upper is None:
             upper = []
         word = part.word
-        caseIndex = []
         run = 1
         start = 0
         end = len(word) - 1
         for index, char in enumerate(word):
             if index == end or char != word[index + 1]:
-                if caseIndex:
-                    mutations = [Mutation('case', caseIndex)]
-                else:
-                    mutations = None
                 if run >= minLength:
                     self.addQueue(
                         part        = part,
@@ -431,7 +423,6 @@ class Password(object):
                         suffix      = word[index+1:],
                         sub         = word[start:index+1],
                         type        = 'repetition',
-                        mutations   = mutations,
                         cost        = self.charCost(word))
                 caseIndex = []
                 start = index + 1

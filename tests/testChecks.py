@@ -11,6 +11,21 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.parts[0].type, "repetition")
         self.assertGreater(result.time, 0)
 
+    def testRandomPassword(self):
+        """Test that main() runs and returns a valid analysis object."""
+        result = pass_check.main(randomPassword=True)
+        self.assertTrue(bool(result.word))
+        self.assertGreater(result.cost, 1)
+        self.assertTrue(bool(result.parts[0].word))
+        self.assertTrue(bool(result.parts[0].type))
+        self.assertTrue(bool(result.word))
+
+    def testTime(self):
+        """Test random passwords, fail if any time is greater than 1"""
+        for i in range(0, 20):
+            result = pass_check.main(randomPassword=True)
+            self.assertLess(result.time, 1)
+
     def testPatternWordRepeat(self):
         """Test that repeated words are identified."""
         result = pass_check.main("timertimer")

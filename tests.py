@@ -1,8 +1,9 @@
 import unittest
-from tests.testChecks import TestFind, TestRemove, TestOther, TestCombined
+from tests.testChecks import TestMain, TestFind, TestRemove, TestOther, TestCombined
 
 if __name__ == "__main__":
     suite = [
+        unittest.makeSuite(TestMain),
         unittest.makeSuite(TestFind),
         unittest.makeSuite(TestRemove),
         unittest.makeSuite(TestOther),

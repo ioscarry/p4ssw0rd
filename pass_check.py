@@ -252,45 +252,8 @@ def main(pw=None, randomPassword=False):
 if __name__ == "__main__":
     profile = 0
     randomPassword = 0
-    pw = "qwerbunchasdfsmall"
-    pw = "supercasy1"
-    #pw = "correcthorsebatterystaple"
-    #pw = "((!11!No!5))01/49"
-    #pw = "This is a long, but terrible passphrase."
-    #pw = "22200" # 2/22/00?
-    #pw = "10/23/99"
-    #pw = "123qweasdzxc"
-    #pw = "08-31-2004"
-    #pw = "dog$hose"
-    #pw = "To be or not to be, that is the question"
-    #pw = "<<notG00dP4$$word>>tim2008-09-04"
-    #pw = "asdfawrbteabfdagawe"
-    #pw = "wpm,.op[456curkky"
-    #pw = "$$money$$"
-    #pw = "!!andtammytammy!!"
-    #pw = "--word&second--"
-    #pw = "money!!"
-    #pw = "2008-04-09tim"
-    #pw = "B3taM4le"
-    #pw = "$$thing$$"
-    #pw = "2009/04/21"
-    #pw = "everything and nothing are together at last"
-    # Possible bugs from rockyou.txt
-    #pw = "kirsygirl23"
-    #pw = "ali19-45"
-    #pw = "rubenaNDJUanito"
-    #pw = "imranskuri"
-    #pw = "rheybeth"
-    #pw = "brewstabb"
-    #pw = "5mona$$$"
-    #pw = "tuktik2517"
     pw = "eunuchportraitracisttangent333"           # Long analyze time - 1.2s
-    pw = "342008"           # Not picked up as date
-    #pw = "ffffffffffffffff"
-    #pw = "-p-a-s-s-w-o-r-d-$$$$2008-02"
-    pw = "smile4420"
-    pw = "RidgitFerret45!"
-    pw = "((mirrors))"
+    pw = "342008"                                  # Not picked up as date
 
 
     if randomPassword:
