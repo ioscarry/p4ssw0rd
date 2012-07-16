@@ -4,6 +4,7 @@ import key_graph, costs
 from collections import deque
 
 class DBWords(object):
+    """Database object for word lists"""
     def __init__(self):
         self.c = None
 
@@ -23,6 +24,8 @@ class DBWords(object):
             return result[0]
 
 class Part(object):
+    """Node for a password graph, used for storing individual parts and
+    their linkages"""
     def __init__(self, word, type=None, mutations=None, cost=1, pattern=None,
                  prev=None, next=None):
         if mutations is None: mutations = []
@@ -42,17 +45,17 @@ class Part(object):
         self.next = next
 
     def __repr__(self):
-#        return "word: {}, type: {}, mutations: {}".format(
-#            self.word, self.type, self.mutations)
         return "Part: {} ({})".format(self.word, self.type)
 
     def _getFinalCost(self):
+        """Returns the cost, including mutations"""
         multi = 1
         for mutation in self.mutations:
             multi *= mutation.cost
         return self.cost * multi
 
     def _getMutationCost(self):
+        """Returns just the multiplier for mutations"""
         multi = 1
         for mutation in self.mutations:
             multi *= mutation.cost
@@ -77,6 +80,7 @@ class Mutation(object):
     cost = property(_getCost)
 
 class Password(object):
+    """Main object which stores all parts search methods."""
     SYMBOLS = tuple('`~!@#$%^&*()-_=+[{]}\\|;:\'",<.>/?')
     BORDERS = ('xx','x','')
     LEET = {
@@ -97,7 +101,6 @@ class Password(object):
         '%':['z']}
 
     def __init__(self, password):
-        # TODO: Save type of each character (lower, number, symbol) to avoid so many regex calls later
         root = Part('', type="root", cost=1)
         password = Part(word=password, prev=deque((root,)))
         root.next = deque((password,))
@@ -119,6 +122,8 @@ class Password(object):
                 yield (word[:start], word[end:], word[start:end])
 
     def findEmail(self, part):
+        """Searches for email addresses (can be weak or strong, but typically
+        very weak)."""
         # TODO: Find email and warn (do not use personal email addresses -
         # consider them public information)
         word = part.word
@@ -129,7 +134,7 @@ class Password(object):
 
     def removeDelimiter(self, word, minNum=4):
         """Search for a delimiter between each character.
-        Returns an array of changes and the modified string."""
+        Returns a tuple: (word, mutation object)."""
         count = 1
         replaced = []
         symbols = "`~!@#$%^&*()-_=+[{]};:\\'\",<.>/? "
@@ -160,7 +165,7 @@ class Password(object):
         possible result (functionality is currently disabled for performance,
         but will be needed with the pervasive i,l=1,1 and i,l=!,! replacements).
 
-        Returns a tuple: (number of replacements made, word)."""
+        Returns a tuple: (word, mutation object)."""
 
         result = [[]]
         replaced = []
@@ -192,8 +197,8 @@ class Password(object):
             yield ''.join(temp), mutation
 
     def removeCase(self, word):
-        """Returns an index of all uppercase letters, and the word in
-        lowercase."""
+        """Searches for uppercase letters.
+        Returns a tuple: (word, mutation object)."""
         replaced = [index for index, char in enumerate(word) if char.isupper()]
         length = len(replaced)
 
@@ -208,17 +213,6 @@ class Password(object):
         else:
             mutation = Mutation('caseMulti', replaced)
         return word.lower(), mutation
-
-#    def checkMemo(self, part):
-#        if part.word in self.queueMemo:
-#            if self.queueMemo:
-#                for item in self.queueMemo[part.word]:
-#                    self.addQueue(part, item[0], item[1], item[2], item[3],
-#                                  item[4], item[5], memo=True)
-#            return True
-#        else:
-#            self.queueMemo[part.word] = []
-#        return False
 
     def searchDictionary(self, word):
         # Open files if necessary
@@ -340,9 +334,9 @@ class Password(object):
                 part += 1
 
     def addParts(self):
+        """Takes the current queue, and adds parts into the password graph."""
         for (part, prefix, suffix, sub) in self.queue:
             if prefix.word:
-#                self.parts.append(prefix)
                 prefix.prev = part.prev
                 prefix.next.append(sub)
                 sub.prev.append(prefix)
@@ -352,9 +346,7 @@ class Password(object):
                 sub.prev = part.prev
                 for node in part.prev:
                     node.next.append(sub)
-#            self.parts.append(sub)
             if suffix.word:
-#                self.parts.append(suffix)
                 sub.next.append(suffix)
                 suffix.prev.append(sub)
                 suffix.next = part.next
@@ -365,8 +357,6 @@ class Password(object):
                 for node in part.next:
                     node.prev.append(sub)
         for (part, prefix, suffix, sub) in self.queue:
-#            if part in self.parts:
-#                self.parts.remove(part)
             for node in part.next:
                 if part in node.prev:
                     node.prev.remove(part)
@@ -374,7 +364,6 @@ class Password(object):
                 if part in node.next:
                     node.next.remove(part)
         self.queue = []
-
 
     def findDate(self, part, returnFirst=False):
         """Search for a date in any possible format.
@@ -388,15 +377,18 @@ class Password(object):
             result = re.match(r"((19|20)\d{2}|\d{2})([-/_. ])?([0-3]?[0-9])?\3?((19|20)\d{2}|\d{2})?$", sub)
             if result:
                 # Not sure what's a month, day, or year - let isDate decide
-                places = (
-                    result.group(1),
-                    result.group(4),
-                    result.group(5))
+                places = (result.group(1), result.group(4), result.group(5))
                 places = [int(x) if x is not None else None for x in places]
                 (type, cost) = self.isDate(places[0], places[1], places[2])
                 if not type:
                     continue
-                self.addQueue(part, prefix, suffix, sub, type, cost=cost)
+                self.addQueue(
+                    part        = part,
+                    prefix      = prefix,
+                    suffix      = suffix,
+                    sub         = sub,
+                    type        = type,
+                    cost        = cost)
                 if returnFirst:
                     return
 
@@ -495,7 +487,13 @@ class Password(object):
         else:
             charset = 52
             type = 'bruteforce'
-        self.addQueue(part, '', '', word, type, [], charset ** len(word))
+        self.addQueue(
+            part        = part,
+            prefix      = '',
+            suffix      = '',
+            sub         = word,
+            type        = type,
+            cost        = charset ** len(word))
 
 if __name__ == "__main__":
 #    pw = Password("hi2")
