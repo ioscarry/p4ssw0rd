@@ -96,6 +96,10 @@ class Password(object):
         '$':['s'],
         '7':['t'],
         '%':['z']}
+    MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep",
+              "oct", "nov", "dec", "january", "february", "march", "april",
+              "june", "july", "august", "september", "october", "november",
+              "december"]
 
     def __init__(self, password):
         root = Part('', type="root", cost=1)
@@ -121,8 +125,6 @@ class Password(object):
     def findEmail(self, part):
         """Searches for email addresses (can be weak or strong, but typically
         very weak)."""
-        # TODO: Find email and warn (do not use personal email addresses -
-        # consider them public information)
         word = part.word
         for prefix, suffix, sub in self.subPermutations(word):
             if re.match(
@@ -258,40 +260,6 @@ class Password(object):
                         if returnFirst:
                             return
 
-    def isYear(self, num):
-        if (1940 <= num <= 2020) or (40 <= num <= 99) or (0 <= num <= 20):
-            return True
-        return False
-
-    def isDate(self, place1, place2, place3):
-        """Return a date type if a date is valid, False if not. Day, Month, and
-        Year can be in any order. Does not currently check for valid days
-        depending on length of month."""
-        if not place2 and not place3:
-            # Y only
-            if self.isYear(place1):
-                return 'date', 75
-        elif not place3:
-            # MD or YM
-            if (1 <= place1 <= 12 and 1 <= place2 <= 31) or (
-                1 <= place2 <= 12 and 1 <= place1 <= 31):
-                return 'date', 372+75
-            elif (1 <= place1 <= 12 and self.isYear(place2)) or (
-                1 <= place2 <= 12 and self.isYear(place1)):
-                return 'date', 900+372+75
-        else:
-            # YMD
-            if self.isYear(place1):
-                if (1 <= place2 <= 12 and 1 <= place3 <= 31) or (
-                    1 <= place3 <= 12 and 1 <= place2 <= 31):
-                    return 'date', 164250+900+372+75
-                # Have to check both for dates such as 01/04/01
-            if self.isYear(place1):
-                if (1 <= place1 <= 12 and 1 <= place2 <= 31) or (
-                    1 <= place2 <= 12 and 1 <= place1 <= 31):
-                    return 'date', 164250+900+372+75
-        return False, False
-
     def addQueue(self, part, prefix, suffix, sub, type=None, mutations=None,
                  cost=None, memo=False):
 #        if not memo:
@@ -362,21 +330,55 @@ class Password(object):
                     node.next.remove(part)
         self.queue = []
 
+    def isYear(self, num):
+        if (1940 <= num <= 2020) or (40 <= num <= 99) or (0 <= num <= 20):
+            return True
+        return False
+
+    def isDate(self, place1, place2, place3):
+        """Return a date type if a date is valid, False if not. Day, Month, and
+        Year can be in any order. Does not currently check for valid days
+        depending on length of month."""
+        if not place2 and not place3:
+            # Y only
+            if self.isYear(place1):
+                return 'date', 75
+        elif not place3:
+            # MD or YM
+            if ((1 <= place1 <= 12 or place1 in self.MONTHS) and 1 <= place2 <= 31) or (
+                (1 <= place2 <= 12 or place2 in self.MONTHS) and 1 <= place1 <= 31):
+                return 'date', 21456 # 372+75 * 48
+            elif ((1 <= place1 <= 12 or place1 in self.MONTHS) and self.isYear(place2)) or (
+                (1 <= place2 <= 12 or place2 in self.MONTHS) and self.isYear(place1)):
+                return 'date', 64656 # 900+372+75
+        else:
+            # YMD
+            if self.isYear(place1):
+                if ((1 <= place2 <= 12 or place2 in self.MONTHS) and 1 <= place3 <= 31) or (
+                    (1 <= place3 <= 12 or place3 in self.MONTHS) and 1 <= place2 <= 31):
+                    return 'date', 7948656 # 164250+900+372+75 * 48
+            if self.isYear(place3):
+                if ((1 <= place1 <= 12 or place1 in self.MONTHS) and 1 <= place2 <= 31) or (
+                    (1 <= place2 <= 12 or place2 in self.MONTHS) and 1 <= place1 <= 31):
+                    return 'date', 7948656 # 164250+900+372+75 * 48
+        return False, False
+
     def findDate(self, part, returnFirst=False):
         """Search for a date in any possible format.
         Performs a general regex for date formats, then validates digits."""
 
-        # TODO: Include words for dates - Apr2092
         word = part.word
         for prefix, suffix, sub in self.subPermutations(word, minLength=4):
-            if re.search(r"[a-zA-Z]", sub):
-                continue
-            result = re.match(r"((19|20)\d{2}|\d{2})([-/_. ])?([0-3]?[0-9])?\3?((19|20)\d{2}|\d{2})?$", sub)
+            result = re.match(r"((19|20)\d{2}|\d{2}|[jfmasondJFMASOND][a-zA-Z]+)([-/_. ])?([0-3]?[0-9]|[jfmasondJFMASOND][a-zA-Z]+)?\3?((19|20)\d{2}|\d{2})?$", sub)
             if result:
                 # Not sure what's a month, day, or year - let isDate decide
                 places = (result.group(1), result.group(4), result.group(5))
-                places = [int(x) if x is not None else None for x in places]
-                (type, cost) = self.isDate(places[0], places[1], places[2])
+                ymd = []
+                for place in places:
+                    if not place: ymd.append(None)
+                    elif place.isdigit(): ymd.append(int(place))
+                    else: ymd.append(place.lower())
+                (type, cost) = self.isDate(ymd[0], ymd[1], ymd[2])
                 if not type:
                     continue
                 self.addQueue(
