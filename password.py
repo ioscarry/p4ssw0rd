@@ -169,6 +169,7 @@ class Password(object):
         result = [[]]
         replaced = []
         for index, char in enumerate(list(word)):
+            # TODO: Include interchangeable i, l and !, 1
             # Special exception for l and i substitutions
             if char in self.LEET and len(self.LEET[char]) > 1:
                 result += copy.deepcopy(result)
@@ -261,13 +262,7 @@ class Password(object):
                             return
 
     def addQueue(self, part, prefix, suffix, sub, type=None, mutations=None,
-                 cost=None, memo=False):
-#        if not memo:
-#            # TODO: Required for unit testing - may be worth refactoring
-#            if not part.word in self.queueMemo:
-#                self.queueMemo[part.word] = []
-#            self.queueMemo[part.word].append(
-#                [prefix, suffix, sub, type, mutations, cost])
+                 cost=None):
         self.queue.append([part, Part(prefix), Part(suffix),
                            Part(sub, type, mutations, cost)])
 
@@ -290,7 +285,6 @@ class Password(object):
                     break
                 part += 1
             else:
-                #for part in node.next:
                 if node.word and combination:
                     yield [i[0] for i in stack if i[0].word] + [node]
                 elif node.word and not combination:
