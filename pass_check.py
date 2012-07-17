@@ -159,33 +159,16 @@ class PassCheck(object):
                 patterns[index] = 'suffix'
 
         cost = 1
-        prefixCount = 0
-        suffixCount = 0
-        borderCount = 0
-        repeatCount = 0
+        borderCount =  0
+        repeatCount =  0
         combinations = []
+        attachments =  []
         for pattern, part in itertools.izip(patterns, parts):
             # TODO: Replace with generalized cases, pull from costs
             if pattern == "prefix":
-                if type == "bruteforce-digits":
-                    cost *= part.finalCost * 2**prefixCount * 499
-                elif type == "bruteforce-lowercase":
-                    cost *= part.finalCost * 2**prefixCount * 1149299
-                elif type == "bruteforce":
-                    cost *= part.finalCost * 2**prefixCount * 2762549
-                else:
-                    cost *= part.finalCost * 2**prefixCount
-                prefixCount += 1
+                attachments.append(part.cost * 2)
             elif pattern == "suffix":
-                if type == "bruteforce-digits":
-                    cost *= part.finalCost * 2**suffixCount * 499
-                elif type == "bruteforce-lowercase":
-                    cost *= part.finalCost * 2**suffixCount * 1149299
-                elif type == "bruteforce":
-                    cost *= part.finalCost * 2**suffixCount * 2762549
-                else:
-                    cost *= part.finalCost * 2**suffixCount
-                suffixCount += 1
+                attachments.append(part.cost)
             elif pattern == ("border-repeat"):
                 if borderCount:
                     continue
@@ -208,6 +191,8 @@ class PassCheck(object):
                 cost *= 20000 ** len(combinations)
             else:
                 cost *= max(combinations) ** len(combinations)
+        if attachments:
+            cost *= max(attachments) ** len(attachments)
         return patterns, cost
 
 class Analysis(object):
@@ -252,9 +237,9 @@ def main(pw=None, randomPassword=False):
 if __name__ == "__main__":
     profile = 0
     randomPassword = 0
-    pw = "eunuchportraitracisttangent333"           # Long analyze time - 1.2s
-    pw = "342008"                                  # Not picked up as date
-
+    pw = "eunuchportraitracisttangent333"           # Long analyze time - 2.4s
+    #pw = "342008"                                   # Not picked up as date
+    #pw = "D0g.................................$.."
 
     if randomPassword:
         result = main(randomPassword=True)
