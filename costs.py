@@ -47,22 +47,22 @@ Numbers added to 8 char                                         * 111111111     
 Numbers and symbols added to 8 char                             * 9900000000000 arg102$2!08, !!@#^$&9hello
 """
 
-# Costs of all mutations
-mutations = {
-    "caseFirst":    2,
-    "caseUpper":    3,
-    "caseOne":      6,
-    "caseMulti":    32,
-    "leetOne":      6,
-    "leetMulti":    32,
-    "delimiter":    20,
-    "swapOne":      6,
-    "swapMulti":    36,
-    "missingOne":   6,
-    "missingMulti": 36,
-    "dupeOne":      6,
-    "dupeMulti":    36,
-}
+## Costs of all mutations
+#mutations = {
+#    "caseFirst":    2,
+#    "caseUpper":    3,
+#    "caseOne":      6,
+#    "caseMulti":    32,
+#    "leetOne":      6,
+#    "leetMulti":    32,
+#    "delimiter":    20,
+#    "swapOne":      6,
+#    "swapMulti":    36,
+#    "missingOne":   6,
+#    "missingMulti": 36,
+#    "dupeOne":      6,
+#    "dupeMulti":    36,
+#}
 
 # Cumulative costs for mutations
 mutations = {
@@ -82,53 +82,36 @@ mutations = {
 }
 
 # Costs of appending to a base word or combination word
-append = {
-    "symbolOneCommon":          10,
-    "symbolOneUncommon":        22,
-    "number11to9999":           40,
-    "numberRun":                50,
-    "number0-99":               110,
-    "symbol2to3Common":         30,
-    "symbol2to3Uncommon":       66,
-    "borderRepeatCommon1to3":   30,
-    "borderRepeatUncommon1to3": 66,
-    "dateY":                    75,
-    "dateYM":                   37800,
-    "dateYMD":                  1613250,
-    "numbers3to6":              1111000,
-    "numbers7to8":              110000000,
-    "numbersSymbols1to8":       9900000000000,
-}
-
-append = {
-    "symbolOneCommon": 10,
-    "symbolOneUncommon": 32,
-    "borderRepeatCommon1to3": 62,
-    "symbol2to3Common": 92,
-    "number11to9999": 132,
-    "numberRun": 182,
-    "borderRepeatUncommon1to3": 248,
-    "symbol2to3Uncommon": 314,
-    "dateY": 389,
-    "number0-99": 499,
-    "dateYM": 38299,
-    "numbers3to6": 1149299,
-    "dateYMD": 2762549,
-    "numbers7to8": 112762549,
-    "numbersSymbols1to8": 9900112762549,
-}
+#append = {
+#    "symbolOneCommon":          10,
+#    "symbolOneUncommon":        22,
+#    "number11to9999":           40,
+#    "numberRun":                50,
+#    "number0-99":               110,
+#    "symbol2to3Common":         30,
+#    "symbol2to3Uncommon":       66,
+#    "borderRepeatCommon1to3":   30,
+#    "borderRepeatUncommon1to3": 66,
+#    "dateY":                    75,
+#    "dateYM":                   37800,
+#    "dateYMD":                  1613250,
+#    "numbers3to6":              1111000,
+#    "numbers7to8":              110000000,
+#    "numbersSymbols1to8":       9900000000000,
+#}
 
 if __name__ == "__main__":
-    maxValue = 0
-    print "mutations = {"
-    for key, value in sorted(mutations.iteritems(), key=lambda(k, v): (v, k)):
-        maxValue += value
-        print '\t"{}": {},'.format(key, maxValue)
-    print "}"
-
-    maxValue = 0
-    print "append = {"
-    for key, value in sorted(append.iteritems(), key=lambda(k, v): (v, k)):
-        maxValue += value
-        print '\t"{}": {},'.format(key, maxValue)
-    print "}"
+    pass
+#    maxValue = 0
+#    print "mutations = {"
+#    for key, value in sorted(mutations.iteritems(), key=lambda(k, v): (v, k)):
+#        maxValue += value
+#        print '\t"{}": {},'.format(key, maxValue)
+#    print "}"
+#
+#    maxValue = 0
+#    print "append = {"
+#    for key, value in sorted(append.iteritems(), key=lambda(k, v): (v, k)):
+#        maxValue += value
+#        print '\t"{}": {},'.format(key, maxValue)
+#    print "}"
