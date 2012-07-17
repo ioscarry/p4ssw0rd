@@ -1,5 +1,5 @@
 import unittest
-import pass_check, password
+import pass_check
 
 class TestMain(unittest.TestCase):
     def testAnalysis(self):
@@ -126,6 +126,34 @@ class TestFind(unittest.TestCase):
     def testFindDateYMD(self):
         node = self.getNext("findDate", "2009/04/21")
         self.assertEqual(node.word, "2009/04/21")
+        self.assertEqual(node.type, "date")
+        self.assertEqual(node.mutations, [])
+
+    def testFindDateMon(self):
+        node = self.getNext("findDate", "2009/mar/21")
+        self.assertEqual(node.word, "2009/mar/21")
+        self.assertEqual(node.type, "date")
+        self.assertEqual(node.mutations, [])
+        node = self.getNext("findDate", "Sep/21")
+        self.assertEqual(node.word, "Sep/21")
+        self.assertEqual(node.type, "date")
+        self.assertEqual(node.mutations, [])
+        node = self.getNext("findDate", "1941-Aug")
+        self.assertEqual(node.word, "1941-Aug")
+        self.assertEqual(node.type, "date")
+        self.assertEqual(node.mutations, [])
+
+    def testFindDateMonth(self):
+        node = self.getNext("findDate", "2009/March/21")
+        self.assertEqual(node.word, "2009/March/21")
+        self.assertEqual(node.type, "date")
+        self.assertEqual(node.mutations, [])
+        node = self.getNext("findDate", "21/September")
+        self.assertEqual(node.word, "21/September")
+        self.assertEqual(node.type, "date")
+        self.assertEqual(node.mutations, [])
+        node = self.getNext("findDate", "August24")
+        self.assertEqual(node.word, "August24")
         self.assertEqual(node.type, "date")
         self.assertEqual(node.mutations, [])
 
