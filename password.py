@@ -408,8 +408,6 @@ class Password(object):
 
     def findRepeated(self, part, minLength=3, upper=None):
         """Finds repeated characters."""
-        if upper is None:
-            upper = []
         word = part.word
         run = 1
         start = 0
@@ -424,18 +422,11 @@ class Password(object):
                         sub         = word[start:index+1],
                         type        = 'repetition',
                         cost        = self.charCost(word))
-                caseIndex = []
                 start = index + 1
                 run = 1
                 continue
             else:
-                if index in upper:
-                    caseIndex.append(index)
                 run += 1
-#        if not upper:
-#            replaced, word = self.removeCase(word)
-#            if replaced:
-#                self.findRepeated(part, minLength, replaced)
 
     def findKeyRun(self, part, minLength=4):
         """Finds consecutive runs on the keyboard through graphs - minimum of
