@@ -94,6 +94,14 @@ class TestFind(unittest.TestCase):
         self.assertEqual(node.type, "word")
         self.assertEqual(node.mutations, [])
 
+    def testFindWordFail(self):
+        node = self.getNext("findWord", "102984582")
+        self.assertNotEqual(node.type, "word")
+        node = self.getNext("findWord", "aaaapppppeeee")
+        self.assertNotEqual(node.type, "word")
+        node = self.getNext("findWord", "dfgqwejklzxc")
+        self.assertNotEqual(node.type, "word")
+
     def testFindWordLeetMulti(self):
         node = self.getNext("findWord", "t3rr!fy")
         self.assertEqual(node.word, "terrify")
@@ -101,12 +109,37 @@ class TestFind(unittest.TestCase):
         self.assertEqual(node.mutations[0].type, "leetMulti")
         self.assertEqual(node.mutations[0].index, [1, 4])
 
-    def testFindWordCapMulti(self):
+    def testFindWordLeetOne(self):
+        node = self.getNext("findWord", "appl3")
+        self.assertEqual(node.word, "apple")
+        self.assertEqual(node.type, "word")
+        self.assertEqual(node.mutations[0].type, "leetOne")
+        self.assertEqual(node.mutations[0].index, [4])
+
+    def testFindWordCap(self):
         node = self.getNext("findWord", "rOBert")
         self.assertEqual(node.word, "robert")
         self.assertEqual(node.type, "word")
         self.assertEqual(node.mutations[0].type, "caseMulti")
         self.assertEqual(node.mutations[0].index, [1, 2])
+
+        node = self.getNext("findWord", "Elephant")
+        self.assertEqual(node.word, "elephant")
+        self.assertEqual(node.type, "word")
+        self.assertEqual(node.mutations[0].type, "caseFirst")
+        self.assertEqual(node.mutations[0].index, [0])
+
+        node = self.getNext("findWord", "poRk")
+        self.assertEqual(node.word, "pork")
+        self.assertEqual(node.type, "word")
+        self.assertEqual(node.mutations[0].type, "caseOne")
+        self.assertEqual(node.mutations[0].index, [2])
+
+    def testFindWordCapFail(self):
+        node = self.getNext("findWord", "rich")
+        self.assertEqual(node.word, "rich")
+        self.assertEqual(node.type, "word")
+        self.assertListEqual(node.mutations, [])
 
     def testFindWordCapMultiLeetMulti(self):
         node = self.getNext("findWord", "T3l3gr4PH")
@@ -183,11 +216,20 @@ class TestFind(unittest.TestCase):
         node = self.getNext("findRepeated", "twolllllllthree")
         self.assertEqual(node.word, "two")
         self.assertEqual(node.next[0].word, "lllllll")
+        self.assertEqual(node.next[0].type, "repetition")
+
+    def testFindRepeatedFail(self):
+        node = self.getNext("findRepeated", "201948")
+        self.assertNotEqual(node.type, "repetition")
 
     def testFindEmail(self):
         node = self.getNext("findEmail", "dsapwqa.320@iatz.net")
         self.assertEqual(node.word, "dsapwqa.320@iatz.net")
         self.assertEqual(node.type, "email")
+
+    def testFindEmailFail(self):
+        node = self.getNext("findEmail", "dsapwqa.320@ca")
+        self.assertNotEqual(node.type, "email")
 
     def testFindKeyRun(self):
         node = self.getNext("findKeyRun", "sdfghjkl")
@@ -200,6 +242,10 @@ class TestFind(unittest.TestCase):
         self.assertEqual(node.word, "123456qwerty")
         self.assertEqual(node.type, "keyboard")
         self.assertEqual(node.cost, 264**2)
+
+    def testFindKeyRunFail(self):
+        node = self.getNext("findKeyRun", "pqowieuryt")
+        self.assertNotEqual(node.type, "keyboard")
 
     def testFindBruteForce(self):
         node = self.getNext("findBruteForce", "owirudyas")

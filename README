@@ -10,6 +10,9 @@ second - a single modern GPU).
 
 Entropy is not considered, since this is doing full dictionary attack simulation.
 
+"Random Password" functionality requires a password list - just put it in the
+root directory as "random.txt". The demo uses the entire RockYou password leak.
+
 Key graphs are based on concepts from Dan Wheeler's zxcvbn, which is one of the
 best client-side password analyzers out there. https://github.com/lowe/zxcvbn
 

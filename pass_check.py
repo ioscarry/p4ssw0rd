@@ -164,7 +164,6 @@ class PassCheck(object):
         combinations = []
         attachments =  []
         for pattern, part in itertools.izip(patterns, parts):
-            # TODO: Replace with generalized cases, pull from costs
             if pattern == "prefix":
                 attachments.append(part.cost * 2)
             elif pattern == "suffix":
@@ -206,20 +205,28 @@ class Analysis(object):
     def addPart(self, part):
         self.parts.append(part)
 
+class Error(object):
+    """Object which contains error information."""
+    def __init__(self, message):
+        self.message = message
+        self.time = time.time()
+
 def main(pw=None, randomPassword=False):
     if randomPassword:
         import os, random
-        passwordFile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "rockyou.txt")
+        try:
+            passwordFile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "random.txt")
+        except IOError:
+            return Error("No random password file found; functionality is disabled.")
         f = open(passwordFile, "r")
         size = os.stat(passwordFile).st_size
         f.seek(random.randint(0, size))
         f.readline()
-        pw = str(f.readline().rstrip("\r\n"))
+        pw = f.readline().rstrip("\r\n")
         f.close()
     elif not pw:
         return None
 
-    pw = str(pw)
     timeStart = time.time()
     pc = PassCheck(pw)
     pc.findParts()
@@ -240,6 +247,7 @@ if __name__ == "__main__":
     pw = "eunuchportraitracisttangent333"           # Long analyze time - 2.4s
     #pw = "342008"                                   # Not picked up as date
     #pw = "D0g.................................$.."
+    pw = "2009/Mar/21"
 
     if randomPassword:
         result = main(randomPassword=True)
